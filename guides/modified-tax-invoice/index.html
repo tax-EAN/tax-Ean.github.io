@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="수정세금계산서를 언제, 어떤 사유로, 홈택스에서 어떻게 발급하는지 사유별로 정리한 안내입니다.">
+<meta property="og:title" content="수정세금계산서 발급 안내">
+<meta property="og:description" content="사유별 작성일자·발급기한·홈택스 발급 방법과 자주 묻는 질문">
+<meta property="og:type" content="article">
+<title>수정세금계산서 발급 안내</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: 한 줄 기둥(약 720px) 문서. 세금계산서 양식의 관례(음(-)=붉은 글씨)를 색 언어로 사용.
+   당초 날짜로 고치는 사유 = 파랑, 새 날짜로 발급하는 사유 = 초록, 음(-) 금액 = 빨강 */
+:root{
+  --bg:#f5f7f9; --surface:#ffffff; --ink:#17212d; --muted:#586374; --line:#d8dee6;
+  --orig:#1f57a3; --orig-soft:#e7eef9;
+  --new:#0b7360; --new-soft:#e2f3ee;
+  --minus:#c42b2b; --warn-soft:#fdf0ee; --flag:#8a5a00; --flag-soft:#fff3d6;
+  --f-display:"IBM Plex Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-body:"Noto Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10161e; --surface:#18212c; --ink:#e7ecf2; --muted:#a2adbb; --line:#2c3846;
+  --orig:#7fb0f2; --orig-soft:#1b2c45; --new:#5fd0b6; --new-soft:#13332d;
+  --minus:#ff7b74; --warn-soft:#3a1f1e; --flag:#f3c463; --flag-soft:#3a2f14; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10161e; --surface:#18212c; --ink:#e7ecf2; --muted:#a2adbb; --line:#2c3846;
+  --orig:#7fb0f2; --orig-soft:#1b2c45; --new:#5fd0b6; --new-soft:#13332d;
+  --minus:#ff7b74; --warn-soft:#3a1f1e; --flag:#f3c463; --flag-soft:#3a2f14; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.7;word-break:keep-all;overflow-wrap:break-word;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:760px;margin:0 auto;padding-block:40px 56px;display:flex;flex-direction:column;gap:44px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.35}
+h1{font-size:clamp(26px,5.4vw,34px);font-weight:700}
+h2{font-size:22px;font-weight:700;display:flex;gap:10px;align-items:baseline}
+h2 .no{font-family:var(--f-num);font-size:14px;color:var(--muted);font-weight:500}
+h3{font-size:17px;font-weight:600}
+p{margin:0}
+section{display:flex;flex-direction:column;gap:16px}
+.eyebrow{font-size:13px;letter-spacing:.06em;color:var(--muted);font-weight:500}
+.lead{font-size:18px;color:var(--ink)}
+.muted{color:var(--muted)}
+.minus{color:var(--minus);font-family:var(--f-num)}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+b,strong{font-weight:700}
+.flag{display:inline-block;font-size:12px;font-weight:700;color:var(--flag);background:var(--flag-soft);
+  padding:1px 7px;border-radius:4px;white-space:nowrap;vertical-align:1px}
+.tag{display:inline-block;font-size:12.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.tag.orig{color:var(--orig);background:var(--orig-soft)}
+.tag.new{color:var(--new);background:var(--new-soft)}
+.btn{font-weight:700;white-space:nowrap}
+.btn::before{content:"["}.btn::after{content:"]"}
+
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+section,#toc,#chakoh{scroll-margin-top:16px}
+.toc{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 18px;display:flex;flex-direction:column;gap:8px}
+.toc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.toc li a{display:flex;gap:10px;align-items:baseline;padding:6px 4px;border-radius:6px;color:var(--ink);text-decoration:none;font-family:var(--f-display);font-weight:600}
+.toc li a:hover{background:var(--bg)}
+.toc li a .no{font-family:var(--f-num);font-size:13px;color:var(--muted);font-weight:500;min-width:22px}
+.toc li.sub a{font-weight:500;font-size:14.5px;padding-left:36px;color:var(--muted)}
+a:focus-visible{outline:2px solid var(--orig);outline-offset:2px}
+.totop{margin-top:4px;text-align:right;font-size:14px}
+.totop a{color:var(--muted);text-decoration:none}
+.totop a:hover{color:var(--orig);text-decoration:underline}
+.fab{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;
+  background:var(--ink);color:var(--bg);display:grid;place-items:center;text-decoration:none;font-family:var(--f-num);font-size:18px;box-shadow:0 2px 8px rgba(0,0,0,.18);z-index:5}
+
+/* 머리 */
+header{display:flex;flex-direction:column;gap:14px}
+.summary{border-left:4px solid var(--ink);padding:4px 0 4px 16px;font-size:17px}
+.slips{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.slip{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 14px;min-width:0;flex:1 1 200px}
+.slip .k{font-size:12.5px;color:var(--muted)}
+.slip .v{font-family:var(--f-num);font-size:18px;font-variant-numeric:tabular-nums}
+.slip.cancel{border-color:var(--minus)}
+.slip.cancel .v{color:var(--minus)}
+
+/* 표 */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:15px;min-width:560px}
+th,td{text-align:left;vertical-align:top;padding:11px 12px;border-bottom:1px solid var(--line)}
+th{font-family:var(--f-display);font-weight:600;font-size:13.5px;color:var(--muted);background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.grp{font-weight:700;white-space:nowrap}
+tr.gh td{background:var(--orig-soft);color:var(--orig);font-family:var(--f-display);font-weight:700;font-size:14.5px;padding:9px 12px;border-bottom:1px solid var(--line)}
+tr.gh.new td{background:var(--new-soft);color:var(--new)}
+tr.gh .ghk{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;background:var(--orig);color:var(--surface);margin-right:8px;vertical-align:1px}
+tr.gh.new .ghk{background:var(--new)}
+tr.orig td.grp{color:var(--orig)}
+tr.new td.grp{color:var(--new)}
+.rgh{font-family:var(--f-display);font-weight:700;font-size:15px;padding:8px 12px;border-radius:6px;background:var(--orig-soft);color:var(--orig)}
+.rgh.new{background:var(--new-soft);color:var(--new)}
+.defs{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.defs ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:2px}
+.vs th:first-child{width:110px}
+tr.no td{color:var(--muted)}
+
+/* 단계 */
+ol.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:22px;counter-reset:s}
+ol.steps>li{counter-increment:s;display:grid;grid-template-columns:34px 1fr;gap:0 14px}
+ol.steps>li::before{content:counter(s);grid-row:1/span 3;width:34px;height:34px;border-radius:50%;
+  background:var(--ink);color:var(--bg);font-family:var(--f-num);font-weight:500;display:grid;place-items:center;font-size:15px}
+ol.steps>li>*{min-width:0;grid-column:2}
+.path{font-family:var(--f-display);font-weight:600;background:var(--surface);border:1px solid var(--line);
+  border-radius:6px;padding:8px 12px;font-size:15px;word-break:keep-all}
+.path span{color:var(--muted);padding:0 4px}
+figure{margin:10px 0 0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+figure img{display:block;width:100%;height:auto}
+figcaption{font-size:13px;color:var(--muted);padding:6px 10px;background:var(--surface);border-top:1px solid var(--line)}
+
+.figs{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+.figs figure{margin-top:10px}
+@media (max-width:719px){.figs{grid-template-columns:1fr}}
+ul.tight{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+
+/* 사유 카드 (휴대폰) */
+.legend{display:flex;gap:8px 16px;flex-wrap:wrap;font-size:14px}
+.reasons{display:none;flex-direction:column;gap:12px}
+.rc{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.rc.orig{border-top:3px solid var(--orig)}
+.rc.new{border-top:3px solid var(--new)}
+.rc dl{margin:0;display:grid;grid-template-columns:84px 1fr;gap:6px 10px;font-size:15px}
+.rc dt{color:var(--muted);font-size:13.5px;padding-top:1px}
+.rc dd{margin:0;min-width:0}
+@media (max-width:719px){.cmp-table{display:none}.reasons{display:flex}}
+
+/* FAQ */
+.faq{display:flex;flex-direction:column;gap:10px}
+details{background:var(--surface);border:1px solid var(--line);border-radius:8px}
+summary{cursor:pointer;padding:14px 16px;font-family:var(--f-display);font-weight:600;font-size:16px;list-style:none;display:flex;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary .q{color:var(--orig);font-family:var(--f-num)}
+summary::after{content:"+";margin-left:auto;color:var(--muted);font-family:var(--f-num)}
+details[open] summary::after{content:"−"}
+summary:focus-visible{outline:2px solid var(--orig);outline-offset:2px;border-radius:8px}
+details .a{padding:0 16px 16px 16px;display:flex;flex-direction:column;gap:8px}
+
+/* 주의 */
+.warn{background:var(--warn-soft);border:1px solid var(--minus);border-radius:8px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.warn h3{color:var(--minus)}
+ul.check{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+
+.contact{border:1px dashed var(--muted);border-radius:8px;padding:18px;display:grid;grid-template-columns:90px 1fr;gap:8px 12px}
+.contact dt{color:var(--muted)}
+.contact dd{margin:0;color:var(--muted)}
+footer{font-size:13.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:18px;display:flex;flex-direction:column;gap:8px}
+
+@media print{
+  .fab,.totop{display:none!important}
+  body{background:#fff;font-size:12.5px}
+  .wrap{padding-block:0;gap:26px;max-width:none}
+  .cmp-table{display:block!important}.reasons{display:none!important}
+  details{break-inside:avoid}details .a{display:flex!important}
+  summary::after{display:none}
+  figure,.warn,tr,.rc{break-inside:avoid}
+  table{min-width:0;font-size:12px}
+  h2{break-after:avoid}
+  #compare{break-before:page}
+  .figs{grid-template-columns:1fr 1fr!important}
+}
+
+.back{font-size:14px;color:var(--muted);text-decoration:none;width:fit-content}
+.back:hover{color:var(--orig);text-decoration:underline}
+@media print{.back{display:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <a class="back" href="../../">← 가이드 목록</a>
+  <div class="eyebrow">세무 안내 가이드 · 부가가치세</div>
+  <h1>수정세금계산서 발급 안내</h1>
+  <p class="summary">이미 발급한 세금계산서에 틀린 내용이 있거나 거래 금액이 바뀌었을 때, <b>어떤 사유를 골라 어떤 날짜로 다시 발급하는지</b> 한 장에 정리했어요.</p>
+  <p class="muted">수정세금계산서는 처음 발급한 것을 지우는 게 아니라, <b>취소하는 음수(−, 마이너스) 세금계산서</b>와 필요하면 <b>올바른 세금계산서</b>를 추가로 발급하는 방식이에요.</p>
+  <p class="muted" style="font-size:14px">예: 1,550,000원짜리 거래를 1,250,000원으로 잘못 발급했다면</p>
+  <div class="slips" aria-label="예시: 금액을 잘못 적은 경우">
+    <div class="slip"><div class="k">처음 발급 (그대로 남아요)</div><div class="v">공급가액 1,250,000</div></div>
+    <div class="slip cancel"><div class="k">① 취소분 (자동 발급)</div><div class="v">−1,250,000</div></div>
+    <div class="slip"><div class="k">② 올바른 수정분 (직접 작성)</div><div class="v">1,550,000</div></div>
+  </div>
+</header>
+
+<nav id="toc" class="toc" aria-label="목차">
+  <div class="eyebrow">목차</div>
+  <ol>
+    <li><a href="#when"><span class="no">01</span>언제 해당되나요?</a></li>
+    <li><a href="#how"><span class="no">02</span>홈택스에서 하는 방법</a></li>
+    <li><a href="#compare"><span class="no">03</span>사유별 처리방법 한눈에 보기</a></li>
+    <li class="sub"><a href="#chakoh">'착오'와 '착오 외' 구분</a></li>
+    <li><a href="#faq"><span class="no">04</span>자주 묻는 질문</a></li>
+    <li><a href="#caution"><span class="no">05</span>주의사항·기한</a></li>
+  </ol>
+</nav>
+
+<section id="when">
+  <h2><span class="no">01</span>언제 해당되나요?</h2>
+  <p>아래 상황 중 내 경우를 찾고, 오른쪽의 <b>홈택스 수정사유</b>를 기억해 두세요. 3단계에서 이 이름의 버튼을 누르시면 돼요.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>이런 상황이에요</th><th>홈택스 수정사유</th></tr></thead>
+    <tbody>
+      <tr class="gh orig"><td colspan="2"><span class="ghk">당초 날짜</span>처음 발급한 작성일자 그대로 고쳐요</td></tr>
+      <tr class="orig"><td>금액, 작성일자(공급한 날짜), 공급받는 자 사업자등록번호를 잘못 적었어요</td><td class="grp">기재사항 착오 정정 등</td></tr>
+      <tr class="orig"><td>세율을 잘못 적었어요 (예: 영세율인데 10%로 발급)</td><td class="grp">기재사항 착오 정정 등</td></tr>
+      <tr class="orig"><td>같은 거래를 실수로 두 번 발급했어요<br>면세 거래인데 세금계산서를 발급했어요<br>카드로 결제받은 거래인데 세금계산서도 발급했어요</td><td class="grp">착오에 의한 이중발급 등</td></tr>
+      <tr class="orig"><td>수출용으로 공급했는데, 나중에 내국신용장(수출용 물품 거래를 보증하는 증서)이나 구매확인서가 나왔어요</td><td class="grp">내국신용장 등 사후 개설</td></tr>
+      <tr class="gh new"><td colspan="2"><span class="ghk">새 날짜</span>일이 생긴 날을 작성일자로 새로 발급해요</td></tr>
+      <tr class="new"><td>거래 후 할인해 주거나 단가가 바뀌어 금액이 늘거나 줄었어요</td><td class="grp">공급가액의 변동</td></tr>
+      <tr class="new"><td>계약이 아예 취소되어 물건·서비스를 공급하지 않게 됐어요</td><td class="grp">계약의 해제</td></tr>
+      <tr class="new"><td>공급한 물건이 반품됐어요</td><td class="grp">환입</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 style="margin-top:8px">이런 경우는 수정발급 대상이 아니에요</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>상황</th><th>이렇게 하세요</th></tr></thead>
+    <tbody>
+      <tr class="no"><td>이메일 주소를 잘못 넣었거나 빠뜨렸어요</td><td>홈택스 <b>메일발송목록 조회 및 재발송</b>에서 주소를 고쳐 다시 보내세요</td></tr>
+      <tr class="no"><td>거래처 상호나 대표자 이름만 바뀌었어요</td><td>필요적 기재사항(꼭 적어야 하는 항목)이 아니라 고치지 않아도 돼요 (아래 Q1 참고)</td></tr>
+      <tr class="no"><td>처음 계약보다 수량을 더 공급했어요</td><td>새로운 거래예요. 추가분은 <b>새 세금계산서</b>로 따로 발급하세요</td></tr>
+      <tr class="no"><td>세금계산서를 발급한 뒤, 대금을 카드로 받았어요</td><td>수정하지 않아요. 세금계산서는 그대로 두세요.<br>다만 매출이 중복으로 잡히지 않도록 <b>꼭 세무대리인에게 공유해 주세요.</b></td></tr>
+    </tbody>
+  </table></div>
+  <p class="totop"><a href="#toc">↑ 목차로</a></p>
+</section>
+
+<section id="how">
+  <h2><span class="no">02</span>홈택스에서 하는 방법</h2>
+  <ol class="steps">
+    <li>
+      <h3>수정발급 메뉴로 들어가세요</h3>
+      <p class="path">홈택스 <span>&gt;</span> 계산서·영수증·카드 <span>&gt;</span> 전자(세금)계산서 발급 <span>&gt;</span> 전자(세금)계산서 수정발급</p>
+      <figure><img src="img/1.png" alt="홈택스 상단 메뉴에서 계산서·영수증·카드, 전자(세금)계산서 발급, 전자(세금)계산서 수정발급을 차례로 선택하는 화면"><figcaption>상단 메뉴 → 왼쪽 메뉴 → 가운데 버튼 순서로 눌러요</figcaption></figure>
+    </li>
+    <li>
+      <h3>고칠 세금계산서를 고르세요</h3>
+      <p>먼저 위쪽 탭에서 <b>세금계산서</b>인지 <b>계산서(면세)</b>인지 고르세요.</p>
+      <ul class="tight">
+        <li><b>승인번호(세금계산서마다 붙는 24자리 번호)를 알면</b> 칸에 입력하고 <span class="btn">확인</span></li>
+        <li><b>모르면</b> 빈칸 그대로 <span class="btn">확인</span>을 누르세요. 조회 화면으로 넘어가요.</li>
+        <li>종이로 발급했던 세금계산서라면 오른쪽 <span class="btn">직접 입력 발급하기</span>를 누르세요.</li>
+      </ul>
+      <figure><img src="img/2.png" alt="수정발급 1단계 화면. 세금계산서 탭과 승인번호 입력칸, 확인 버튼, 직접 입력 발급하기 버튼"><figcaption>승인번호를 몰라도 [확인]을 누르면 목록에서 찾을 수 있어요</figcaption></figure>
+      <p style="margin-top:10px">조회 화면에서는 <b>월별</b>로 해당 연·월을 고르고 <span class="btn">조회</span> → 고칠 건의 <b>선택</b> 동그라미 → 아래 <span class="btn">수정세금계산서발급</span>을 누르세요.</p>
+      <figure><img src="img/3.png" alt="발급 목록 조회 화면. 월별 선택, 조회 버튼, 선택 라디오 버튼, 수정세금계산서발급 버튼"><figcaption>작성일자로 찾아서 선택하세요</figcaption></figure>
+    </li>
+    <li>
+      <h3>수정사유를 고르세요</h3>
+      <p>01번 표에서 찾은 사유 칸의 <span class="btn">발급하기</span>를 누르세요. 위 줄 3개는 <span class="tag orig">당초 날짜</span>, 아래 줄 3개는 <span class="tag new">새 날짜</span>로 발급하는 사유예요.</p>
+      <figure><img src="img/4.png" alt="수정발급 사유 선택 화면. 기재사항 착오 정정 등, 착오에 의한 이중발급 등, 내국신용장 등 사후 개설, 공급가액의 변동, 계약의 해제, 환입"><figcaption>사유마다 발급되는 장수가 적혀 있어요</figcaption></figure>
+    </li>
+    <li>
+      <h3>내용을 확인하고 발급하세요</h3>
+      <ul class="tight">
+        <li><b>작성일자</b>를 사유에 맞게 확인하세요. 새 날짜 사유는 할인·해제·반품이 있었던 날로 바꿔야 해요.</li>
+        <li><b>금액</b>을 확인하세요. 줄어든 금액은 앞에 <span class="minus">−</span>를 붙여 입력해요.</li>
+        <li><span class="btn">공급가액의 변동</span>을 고르면 <span class="btn">증가</span>/<span class="btn">감소</span> 창이 떠요. 바뀐 <b>차액만</b> 입력해요. (예: 1,000원 → 900원이면 <span class="minus">−100</span>)</li>
+        <li><span class="btn">내국신용장 등 사후 개설</span>을 고르면 <span class="btn">전액</span>/<span class="btn">일부금액</span> 창이 떠요. 처음 금액 전부에 내국신용장이 열렸으면 전액, 일부만이면 일부금액을 누르세요.</li>
+        <li>마지막으로 <span class="btn">발급미리보기</span>로 확인한 뒤 <span class="btn">발급하기</span>를 누르세요.</li>
+      </ul>
+      <div class="figs">
+        <figure><img src="img/6.png" alt="공급가액의 변동 선택 시 뜨는 창. 차액을 입력하라는 안내와 취소, 증가, 감소 버튼"><figcaption>공급가액의 변동: 늘었으면 [증가], 줄었으면 [감소]</figcaption></figure>
+        <figure><img src="img/5.png" alt="내국신용장 등 사후 개설 선택 시 뜨는 창. 전액, 일부금액 버튼"><figcaption>내국신용장 등 사후 개설: [전액] 또는 [일부금액]</figcaption></figure>
+      </div>
+    </li>
+  </ol>
+  <p class="totop"><a href="#toc">↑ 목차로</a></p>
+</section>
+
+<section id="compare">
+  <h2><span class="no">03</span>사유별 처리방법 한눈에 보기</h2>
+  <p>가장 헷갈리는 건 <b>작성일자</b>예요. 사유에 따라 처음 날짜로 고치는지, 새 날짜로 발급하는지가 갈려요.</p>
+  <div class="tbl cmp-table"><table>
+    <thead><tr><th>수정사유</th><th>작성일자</th><th>발급하는 것</th><th>발급기한</th><th>지난 신고 고치기</th></tr></thead>
+    <tbody>
+      <tr class="gh orig"><td colspan="5"><span class="ghk">당초 날짜</span>처음 발급한 작성일자 그대로 고쳐요</td></tr>
+      <tr class="orig"><td class="grp">기재사항 착오 정정 등</td><td>처음 작성일자</td><td>2장: 취소분 <span class="minus">−</span>(자동) + 올바른 것(직접 작성)</td><td>착오: 기한 없음 (인식한 달의 다음 달 10일까지 권장)<br>착오 외: 확정신고기한 다음 날부터 1년 이내<br><span class="muted">(아래 표 참고)</span></td><td rowspan="3">신고기한이 지난 뒤라면<br><b>수정신고 필요</b></td></tr>
+      <tr class="orig"><td class="grp">착오에 의한 이중발급 등</td><td>처음 작성일자</td><td>1장: 취소분 <span class="minus">−</span>(자동)</td><td>안 날 바로</td></tr>
+      <tr class="orig"><td class="grp">내국신용장 등 사후 개설</td><td>처음 작성일자<br><span class="muted">(비고란에 개설일)</span></td><td>2장: 취소분 <span class="minus">−</span> + 영세율분(자동)</td><td>개설일 다음 달 10일까지<br><span class="muted">(과세기간 끝난 뒤 25일 이내 개설 시 그 25일까지)</span></td></tr>
+      <tr class="gh new"><td colspan="5"><span class="ghk">새 날짜</span>일이 생긴 날을 작성일자로 새로 발급해요</td></tr>
+      <tr class="new"><td class="grp">공급가액의 변동</td><td>금액이 바뀐 날</td><td>1장: 늘어난 만큼 + 또는 줄어든 만큼 <span class="minus">−</span>(직접 작성)</td><td>바뀐 날 다음 달 10일까지</td><td rowspan="3">해당 없음<br><span class="muted">일이 생긴 기간의 신고에 넣어요</span></td></tr>
+      <tr class="new"><td class="grp">계약의 해제</td><td>계약 해제일</td><td>1장: 전액 <span class="minus">−</span></td><td>해제일 다음 달 10일까지</td></tr>
+      <tr class="new"><td class="grp">환입</td><td>반품된 날</td><td>1장: 반품 금액만 <span class="minus">−</span>(직접 작성)</td><td>반품된 날 다음 달 10일까지</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="reasons">
+    <div class="rgh">당초 날짜 · 처음 발급한 작성일자 그대로 고쳐요</div>
+    <div class="rc orig"><h3>기재사항 착오 정정 등</h3><dl><dt>작성일자</dt><dd>처음 작성일자</dd><dt>발급</dt><dd>2장: 취소분 <span class="minus">−</span>(자동) + 올바른 것(직접 작성)</dd><dt>기한</dt><dd>착오는 기한 없음(인식한 달의 다음 달 10일까지 권장), 착오 외는 확정신고기한 다음 날부터 1년 이내 (아래 표 참고)</dd><dt>지난 신고</dt><dd>신고기한 지난 뒤라면 <b>수정신고 필요</b></dd></dl></div>
+    <div class="rc orig"><h3>착오에 의한 이중발급 등</h3><dl><dt>작성일자</dt><dd>처음 작성일자</dd><dt>발급</dt><dd>1장: 취소분 <span class="minus">−</span>(자동)</dd><dt>기한</dt><dd>안 날 바로</dd><dt>지난 신고</dt><dd>신고기한 지난 뒤라면 <b>수정신고 필요</b></dd></dl></div>
+    <div class="rc orig"><h3>내국신용장 등 사후 개설</h3><dl><dt>작성일자</dt><dd>처음 작성일자 (비고란에 개설일)</dd><dt>발급</dt><dd>2장: 취소분 <span class="minus">−</span> + 영세율분(자동)</dd><dt>기한</dt><dd>개설일 다음 달 10일까지 (과세기간 끝난 뒤 25일 이내 개설 시 그 25일까지)</dd><dt>지난 신고</dt><dd>신고기한 지난 뒤라면 <b>수정신고 필요</b></dd></dl></div>
+    <div class="rgh new">새 날짜 · 일이 생긴 날을 작성일자로 새로 발급해요</div>
+    <div class="rc new"><h3>공급가액의 변동</h3><dl><dt>작성일자</dt><dd>금액이 바뀐 날</dd><dt>발급</dt><dd>1장: 늘어난 만큼 + 또는 줄어든 만큼 <span class="minus">−</span></dd><dt>기한</dt><dd>바뀐 날 다음 달 10일까지</dd><dt>지난 신고</dt><dd>해당 없음 (일이 생긴 기간에 신고)</dd></dl></div>
+    <div class="rc new"><h3>계약의 해제</h3><dl><dt>작성일자</dt><dd>계약 해제일</dd><dt>발급</dt><dd>1장: 전액 <span class="minus">−</span></dd><dt>기한</dt><dd>해제일 다음 달 10일까지</dd><dt>지난 신고</dt><dd>해당 없음 (일이 생긴 기간에 신고)</dd></dl></div>
+    <div class="rc new"><h3>환입 (반품)</h3><dl><dt>작성일자</dt><dd>반품된 날</dd><dt>발급</dt><dd>1장: 반품 금액만 <span class="minus">−</span></dd><dt>기한</dt><dd>반품된 날 다음 달 10일까지</dd><dt>지난 신고</dt><dd>해당 없음 (일이 생긴 기간에 신고)</dd></dl></div>
+  </div>
+  <p class="muted" style="font-size:14px">※ 계속 이어지는 거래(예: 매달 공급하는 계약)를 앞으로 중단하는 <b>계약의 해지</b>는 계약의 해제가 아니라 <b>공급가액의 변동</b>으로 처리해요.</p>
+
+  <h3 id="chakoh" style="margin-top:10px">기재사항 착오 정정: '착오'와 '착오 외'는 기한이 달라요</h3>
+  <p>홈택스에서는 둘 다 같은 <span class="btn">기재사항 착오 정정 등</span> 버튼으로 발급해요. 하지만 <b>언제까지 고칠 수 있는지</b>가 달라서, 내 경우가 어느 쪽인지 먼저 알아야 해요.</p>
+
+  <div class="defs">
+    <h3>먼저, 필요적 기재사항이란?</h3>
+    <p>세금계산서에 <b>반드시 적어야 하는 항목</b>이에요. 이 항목이 잘못됐을 때 고치는 게 '기재사항 착오 정정'이에요.</p>
+    <ol>
+      <li>공급하는 사업자의 사업자등록번호와 상호(또는 성명)</li>
+      <li>공급받는 자의 사업자등록번호</li>
+      <li>공급가액과 부가가치세액</li>
+      <li>작성연월일</li>
+    </ol>
+    <p class="muted" style="font-size:14px">공급받는 자의 상호·대표자 성명, 주소, 업태·종목, 품목은 필요적 기재사항이 아니에요. 고칠 의무는 없고, 거래처가 원하면 같은 사유로 다시 발급할 수 있어요.</p>
+  </div>
+
+  <div class="tbl"><table class="vs">
+    <thead><tr><th>구분</th><th>착오</th><th>착오 외</th></tr></thead>
+    <tbody>
+      <tr><td class="grp">한마디로</td><td><b>손이 미끄러진 실수</b></td><td><b>사실을 잘못 알고 적은 경우</b></td></tr>
+      <tr><td class="grp">판단 기준</td><td>세금계산서를 계약서·견적서·입금내역과 나란히 놓고 보면 <b>잘못 적은 게 바로 드러나요</b></td><td>적을 때는 맞다고 생각했는데, <b>나중에 실제 거래 내용과 달랐다는 걸</b> 알게 된 경우예요</td></tr>
+      <tr><td class="grp">예시</td><td>· 1,550,000원을 1,250,000원으로 입력<br>· 9월 3일 거래를 8월 30일로 입력<br>· 영세율인데 10% 세율로 발급</td><td>· 공급받는 자 사업자등록번호를 잘못 적은 경우 <span class="muted">(국세청 자료 예시)</span></td></tr>
+      <tr><td class="grp">언제까지</td><td><b>별도의 발급기한이 법에 정해져 있지 않아요.</b><br>다만 가산세 불이익을 피하려면 <b>착오를 인식한 날이 속하는 달의 다음 달 10일까지</b> 발급하는 게 좋아요</td><td>공급한 날이 속한 과세기간의 <b>확정신고기한 다음 날부터 1년 이내</b><br><span class="muted">예: 1~6월 거래 → 확정신고기한 7월 25일 → 다음 해 7월 25일까지</span></td></tr>
+      <tr><td class="grp">기한이 지나면</td><td>—</td><td>수정발급을 할 수 없어요. 잘못된 세금계산서가 그대로 남아 가산세나 매입세액 불공제로 이어질 수 있어요</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="warn">
+    <h3>둘 다 이럴 때는 고칠 수 없어요</h3>
+    <p>아래 연락을 받은 뒤에는 착오든 착오 외든 <b>기재사항 착오 정정으로 수정발급할 수 없어요.</b> 받으셨다면 먼저 세무대리인에게 알려주세요.</p>
+    <ul class="check">
+      <li>세무조사 통지를 받은 경우</li>
+      <li>세무공무원이 과세자료 수집이나 민원 처리를 위해 현지 출장·확인을 시작한 경우</li>
+      <li>세무서에서 과세자료 해명 안내 통지를 받은 경우</li>
+    </ul>
+  </div>
+  <p class="muted" style="font-size:14px">※ 어느 쪽인지 애매하면 기한이 달라지니 발급 전에 꼭 물어보세요. 근거: 부가가치세법 제32조 제1항, 같은 법 시행령 제70조 제1항 제5호·제6호</p>
+  <p class="totop"><a href="#toc">↑ 목차로</a></p>
+</section>
+
+<section id="faq">
+  <h2><span class="no">04</span>자주 묻는 질문</h2>
+  <div class="faq">
+    <details><summary><span class="q">Q1</span>거래처 상호와 대표자가 바뀌었어요. 수정발급해야 하나요?</summary><div class="a">
+      <p>아니요. 상호와 대표자 이름은 필요적 기재사항이 아니라서 <b>수정발급 대상이 아니에요.</b></p>
+      <p>다만 거래처가 바뀐 이름으로 다시 받고 싶다고 하면, <span class="btn">기재사항 착오 정정 등</span>으로 발급하면서 새로 작성하는 세금계산서에 바뀐 상호·대표자를 적으면 돼요.</p></div></details>
+    <details><summary><span class="q">Q2</span>금액을 잘못 적었어요. [공급가액의 변동]으로 차액만 발급하면 되나요?</summary><div class="a">
+      <p>아니요. 처음부터 금액을 잘못 적은 건 <span class="btn">기재사항 착오 정정 등</span>으로 고쳐야 해요. 처음 건이 <span class="minus">−</span>로 자동 취소되고, 올바른 금액으로 새로 작성하면 돼요.</p>
+      <p>이미 <span class="btn">공급가액의 변동</span>으로 차액을 발급했다면, 그 차액 건은 <span class="btn">착오에 의한 이중발급 등</span>으로 취소하세요.</p></div></details>
+    <details><summary><span class="q">Q3</span>같은 거래를 실수로 두 번 발급했어요.</summary><div class="a">
+      <p>둘 중 한 건을 골라 <span class="btn">착오에 의한 이중발급 등</span>으로 수정발급하세요. 처음 날짜로 <span class="minus">−</span> 1장이 자동으로 만들어져요.</p>
+      <p><span class="btn">계약의 해제</span>는 거래처와 합의해 계약을 취소한 경우에만 쓰는 사유라서 이 경우엔 맞지 않아요.</p></div></details>
+    <details><summary><span class="q">Q4</span>카드로 결제받았는데 세금계산서도 발급했어요. 매출이 두 번 잡히나요?</summary><div class="a">
+      <p>카드 매출전표를 발급한 거래는 세금계산서 발급 대상이 아니에요. 발급한 세금계산서를 <span class="btn">착오에 의한 이중발급 등</span>으로 취소하세요.</p>
+      <p>반대로 <b>세금계산서를 먼저 발급하고 대금만 카드로 받은 경우</b>는 수정하지 않아도 돼요.</p></div></details>
+    <details><summary><span class="q">Q5</span>거래처 요청으로 금액을 깎아줬어요. 어떻게 발급하나요?</summary><div class="a">
+      <p><span class="btn">공급가액의 변동</span> → <span class="btn">감소</span>를 누르고, <b>작성일자를 할인해 준 날</b>로 해서 깎아준 금액만큼 <span class="minus">−</span>로 발급하세요.</p>
+      <p>예를 들어 5월 거래를 7월에 할인해 줬다면, 5월분은 원래대로 두고 할인 금액은 <b>7월이 속한 기간의 부가세 신고</b>에 반영돼요. 지난 신고를 고칠 필요는 없어요.</p></div></details>
+    <details><summary><span class="q">Q6</span>반품이 들어왔어요. 원래 거래 날짜로 발급하면 되나요?</summary><div class="a">
+      <p>아니요. <span class="btn">환입</span>을 고르고 <b>작성일자는 반품된 날</b>로 하세요. 반품된 금액만큼만 <span class="minus">−</span>로 발급해요.</p>
+      <p>원래 거래 날짜로 잘못 발급했다면, 그 건은 작성일자 오류이니 <span class="btn">기재사항 착오 정정 등</span>으로 다시 고쳐야 해요.</p></div></details>
+    <details><summary><span class="q">Q7</span>수량이 늘어 추가로 공급했어요. [공급가액의 변동]으로 하면 되나요?</summary><div class="a">
+      <p>아니요. 추가로 공급한 건 <b>새로운 거래</b>예요. 추가분만 새 세금계산서로 따로 발급하세요.</p>
+      <p><span class="btn">공급가액의 변동</span>은 이미 공급한 거래의 금액이 할인·정산 등으로 바뀐 경우에 써요.</p></div></details>
+    <details><summary><span class="q">Q8</span>부가세 신고가 이미 끝났는데 수정발급하면 어떻게 되나요?</summary><div class="a">
+      <p>사유에 따라 달라요.</p>
+      <ul class="tight">
+        <li><span class="tag orig">당초 날짜</span> 사유(기재사항 착오, 이중발급, 내국신용장)는 이미 끝난 기간의 매출이 바뀌어요. 그래서 <b>지난 신고를 수정신고</b>해야 하고, 세금이 늘면 가산세가 붙을 수 있어요.</li>
+        <li><span class="tag new">새 날짜</span> 사유(공급가액 변동, 계약 해제, 환입)는 일이 생긴 기간의 신고에 넣으면 돼서 수정신고 대상이 아니에요.</li>
+      </ul>
+      <p>어느 쪽이든 <b>발급한 즉시 담당 세무대리인에게 알려주세요.</b></p></div></details>
+  </div>
+  <p class="totop"><a href="#toc">↑ 목차로</a></p>
+</section>
+
+<section id="caution">
+  <h2><span class="no">05</span>주의사항·기한</h2>
+  <div class="warn">
+    <h3>놓치면 불이익이 있어요</h3>
+    <ul class="check">
+      <li><b>신고가 끝난 기간을 당초 날짜로 고치면 수정신고 대상이에요.</b> 늘어난 세금에 가산세가 붙을 수 있고, 수정신고를 언제 하느냐에 따라 가산세가 줄어들 수 있어요. 발견하면 바로 알려주세요.</li>
+      <li><b>발급하기 전에 사유별 발급기한을 확인하세요.</b> 03번 표의 기한이 지나면 가산세가 붙을 수 있어요.</li>
+      <li><b>세무조사 통지나 과세자료 해명 안내를 받은 뒤에는</b> 기재사항 착오 정정이 안 돼요 (03번 참고). 먼저 세무대리인과 상의하세요.</li>
+      <li><b>필요적 기재사항이 사실과 다르게 적힌 채로 두면</b> 발급한 쪽은 가산세, 받은 쪽은 매입세액 불공제(부가세에서 빼주지 않음)를 받을 수 있어요.</li>
+    </ul>
+  </div>
+  <ul class="check">
+    <li>수정발급을 해도 <b>처음 발급한 세금계산서는 지워지지 않아요.</b> 취소분과 수정분이 추가로 쌓여요.</li>
+    <li>수정세금계산서를 <b>받은 쪽</b>도 매입이 바뀌어요. 거래처에서 수정세금계산서를 받으셨다면 그것도 알려주세요.</li>
+    <li>사유가 애매할 때는 발급하기 전에 먼저 물어보세요. 잘못 고르면 다시 수정발급해야 해요.</li>
+  </ul>
+  <p class="totop"><a href="#toc">↑ 목차로</a></p>
+</section>
+
+
+<footer>
+  <p><b>2026년 10월 기준</b> · 근거: 부가가치세법 제32조, 같은 법 시행령 제70조, 국세청 「수정세금계산서 사례별 발급방법」, 홈택스 화면(2026년 10월 캡처)</p>
+  <p>이 안내는 작성 시점의 법령과 자료를 바탕으로 정리한 참고용 자료예요. 법령 개정이나 홈택스 화면 변경으로 내용이 달라질 수 있으니, 실제 처리 전에는 담당 세무대리인과 꼭 확인하세요.</p>
+</footer>
+</div>
+<a class="fab" href="#toc" aria-label="목차로 올라가기">↑</a>
+
+</body>
+</html>

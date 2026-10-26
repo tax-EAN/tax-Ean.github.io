@@ -1,1 +1,5 @@
-# tax-Ean.github.io
+# 세무 안내 가이드
+
+사업자 대표님을 위한 세무 안내 가이드 사이트입니다.
+
+- 사이트 주소: https://tax-ean.github.io

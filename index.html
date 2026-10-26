@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>세무 안내 가이드</title>
+<meta name="description" content="사업자 대표님이 직접 따라 할 수 있도록 홈택스 처리 방법과 자주 묻는 질문을 쉽게 정리한 세무 안내 가이드입니다.">
+<meta property="og:title" content="세무 안내 가이드">
+<meta property="og:description" content="홈택스 처리 방법과 자주 묻는 질문을 쉽게 정리했어요.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* 가이드 페이지와 같은 색·글꼴 체계를 쓰는 목록 페이지 */
+:root{
+  --bg:#f5f7f9; --surface:#ffffff; --ink:#17212d; --muted:#586374; --line:#d8dee6;
+  --orig:#1f57a3; --orig-soft:#e7eef9; --new:#0b7360; --new-soft:#e2f3ee;
+  --f-display:"IBM Plex Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-body:"Noto Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#10161e; --surface:#18212c; --ink:#e7ecf2; --muted:#a2adbb; --line:#2c3846;
+  --orig:#7fb0f2; --orig-soft:#1b2c45; --new:#5fd0b6; --new-soft:#13332d; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.7;word-break:keep-all;overflow-wrap:break-word;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:760px;margin:0 auto;padding-block:48px 56px;display:flex;flex-direction:column;gap:32px}
+h1,h2{font-family:var(--f-display);margin:0;line-height:1.35;text-wrap:balance}
+h1{font-size:clamp(26px,5.4vw,34px)}
+p{margin:0}
+.eyebrow{font-size:13px;letter-spacing:.06em;color:var(--muted);font-weight:500}
+.lead{border-left:4px solid var(--ink);padding:4px 0 4px 16px;font-size:17px}
+header{display:flex;flex-direction:column;gap:12px}
+.group{display:flex;flex-direction:column;gap:12px}
+.group h2{font-size:15px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.cards{grid-template-columns:1fr}}
+a.card{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;color:inherit;text-decoration:none;min-width:0}
+a.card:hover{border-color:var(--orig)}
+a.card:focus-visible{outline:2px solid var(--orig);outline-offset:2px}
+.card .t{font-family:var(--f-display);font-weight:700;font-size:18px}
+.card .d{color:var(--muted);font-size:14.5px}
+.card .m{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12.5px;margin-top:2px}
+.tag{font-weight:700;padding:2px 8px;border-radius:999px;color:var(--orig);background:var(--orig-soft)}
+.date{color:var(--muted);font-family:var(--f-num)}
+.soon{border:1px dashed var(--line);border-radius:10px;padding:16px 18px;color:var(--muted);font-size:14.5px}
+footer{font-size:13.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">사업자 대표님을 위한</div>
+    <h1>세무 안내 가이드</h1>
+    <p class="lead">홈택스에서 직접 하실 일을 <b>순서대로, 쉬운 말로</b> 정리했어요. 필요한 주제를 눌러 보세요.</p>
+  </header>
+
+  <section class="group">
+    <h2>부가가치세</h2>
+    <div class="cards">
+      <a class="card" href="guides/modified-tax-invoice/">
+        <span class="t">수정세금계산서 발급 안내</span>
+        <span class="d">잘못 발급했거나 금액이 바뀌었을 때, 어떤 사유로 어떤 날짜에 다시 발급하는지</span>
+        <span class="m"><span class="tag">세금계산서</span><span class="date">2026.10 기준</span></span>
+      </a>
+    </div>
+  </section>
+
+  <p class="soon">다른 주제도 차례로 추가할 예정이에요.</p>
+
+  <footer>
+    <p>이 가이드는 작성 시점의 법령과 자료를 바탕으로 정리한 참고용 자료예요. 법령 개정이나 홈택스 화면 변경으로 내용이 달라질 수 있으니, 실제 처리 전에는 담당 세무대리인과 꼭 확인하세요.</p>
+  </footer>
+</div>
+</body>
+</html>
