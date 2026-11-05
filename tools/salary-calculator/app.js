@@ -1,11 +1,11 @@
-/* 화면 처리: 탭, 입력 읽기, 결과 그리기, 링크·이미지 공유 */
+/* 화면 처리: 왼쪽 메뉴, 입력 읽기, 결과(문서 모델 → 화면/이미지), 링크·이미지 공유 */
 (function () {
   'use strict';
   var C = window.PayCalc, R = C.RATES;
   var $ = function (s, el) { return (el || document).querySelector(s); };
   var $$ = function (s, el) { return Array.prototype.slice.call((el || document).querySelectorAll(s)); };
 
-  /* ---------- 숫자 표시 ---------- */
+  /* ---------- 숫자 ---------- */
   function won(n) { return Math.round(n).toLocaleString('ko-KR'); }
   function wonD(n) { return (Math.round(n * 100) / 100).toLocaleString('ko-KR', { maximumFractionDigits: 2 }); }
   function kr(n) {
@@ -16,48 +16,42 @@
     if (rest) s.push(rest.toLocaleString('ko-KR'));
     return s.join(' ') + '원';
   }
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function row(label, val, note, cls) {
-    return '<tr' + (cls ? ' class="' + cls + '"' : '') + '><td>' + label + (note ? '<span class="s">' + note + '</span>' : '') + '</td><td class="n">' + val + '</td></tr>';
-  }
-  function cap(t) { return '<tr class="cap"><td colspan="2">' + t + '</td></tr>'; }
-  function big(k, v, unit) { return '<div class="big"><span class="k">' + k + '</span><span class="v">' + v + '<small>' + (unit || '원') + '</small></span></div>'; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function num(v) { v = String(v == null ? '' : v).replace(/[^0-9.\-]/g, ''); var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+  function md(d) { return (d.getUTCMonth() + 1) + '/' + d.getUTCDate(); }
+  var WD = ['일', '월', '화', '수', '목', '금', '토'];
+  var ROUNDNOTE = '끝전 절사로 인해 실제 금액과 단수 차이가 발생할 수 있어요.';
 
   /* ---------- 공통 입력 묶음 ---------- */
   var COMMON = {
     nontax:
-      '<div class="form"><h3>비과세 수당(월)</h3>' +
+      '<div class="fs"><h3>비과세 수당(월)</h3><div class="g2">' +
       '<label class="f"><span>식대</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="meal" value="200000"><em>원</em></div><small>월 20만원까지 비과세</small></label>' +
-      '<label class="f"><span>자가운전보조금</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="car"><em>원</em></div><small>본인 차로 업무에 쓰는 경우 월 20만원까지</small></label>' +
+      '<label class="f"><span>자가운전보조금</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="car"><em>원</em></div><small>본인 차로 업무 시 월 20만원까지</small></label>' +
       '<label class="f"><span>출산·보육수당</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="child"><em>원</em></div><small>6세 이하 자녀 1명당 월 20만원까지</small></label>' +
-      '<label class="f"><span>6세 이하 자녀 수</span><div class="in"><input type="text" inputmode="numeric" class="int" data-k="childKids" value="1"><em>명</em></div></label></div>',
+      '<label class="f"><span>6세 이하 자녀 수</span><div class="in"><input type="text" inputmode="numeric" class="int" data-k="childKids" value="1"><em>명</em></div></label></div></div>',
     person:
-      '<div class="form"><h3>가족·세금</h3>' +
-      '<label class="f"><span>공제대상 가족 수(본인 포함)</span><div class="in"><input type="text" inputmode="numeric" class="int" data-k="fam" value="1"><em>명</em></div><small>본인과 배우자도 각각 1명이에요.</small></label>' +
+      '<div class="fs"><h3>가족 · 세금</h3><div class="g2">' +
+      '<label class="f"><span>공제대상 가족 수(본인 포함)</span><div class="in"><input type="text" inputmode="numeric" class="int" data-k="fam" value="1"><em>명</em></div><small>본인과 배우자도 각각 1명</small></label>' +
       '<label class="f"><span>그중 8세~20세 자녀 수</span><div class="in"><input type="text" inputmode="numeric" class="int" data-k="kids" value="0"><em>명</em></div></label>' +
       '<label class="f"><span>소득세 원천징수 비율</span><select data-k="ratio"><option value="100" selected>100%(기본)</option><option value="80">80%</option><option value="120">120%</option></select><small>직원이 신청한 경우에만 80%·120%</small></label>' +
-      '<div class="f" style="justify-content:flex-end;gap:6px"><label class="chk"><input type="checkbox" data-k="noNP">국민연금 제외(만 60세 이상 등)</label><label class="chk"><input type="checkbox" data-k="noEI">고용보험 제외(65세 이후 새로 고용 등)</label></div></div>',
+      '<div class="f" style="justify-content:center;gap:6px"><label class="chk"><input type="checkbox" data-k="noNP">국민연금 제외(만 60세 이상 등)</label><label class="chk"><input type="checkbox" data-k="noEI">고용보험 제외(65세 이후 새로 고용 등)</label></div></div></div>',
     employer: function () {
       var opts = C.INDUSTRY.map(function (g) {
         return '<optgroup label="' + esc(g[0]) + '">' + g[1].map(function (it) {
-          var v = it[1], sel = it[0] === '도소매·음식·숙박업' ? ' selected' : '';
-          return '<option value="' + v + '"' + sel + ' data-name="' + esc(it[0]) + '">' + esc(it[0]) + ' (' + v + '‰)</option>';
+          return '<option value="' + it[1] + '"' + (it[0] === '도소매·음식·숙박업' ? ' selected' : '') + ' data-name="' + esc(it[0]) + '">' + esc(it[0]) + ' (' + it[1] + '‰)</option>';
         }).join('') + '</optgroup>';
       }).join('');
-      return '<div class="form"><h3>회사 부담 계산</h3>' +
-        '<label class="f"><span>상시 근로자 수</span><select data-k="size"><option value="s150" selected>150인 미만</option><option value="p150">150인 이상 우선지원대상기업</option><option value="u1000">150인 이상 1,000인 미만</option><option value="o1000">1,000인 이상·국가 등</option></select><small>고용보험 회사 부담률이 달라져요.</small></label>' +
-        '<label class="f"><span>산재보험 업종</span><select data-k="ind">' + opts + '</select><small>요율은 <a href="#rates" data-goto="rates">요율표</a>에서 확인할 수 있어요. 출퇴근재해 0.6‰은 자동으로 더해요.</small></label></div>';
+      return '<div class="fs"><h3>회사 부담 계산</h3><div class="g2">' +
+        '<label class="f"><span>상시 근로자 수</span><select data-k="size"><option value="s150" selected>150인 미만</option><option value="p150">150인 이상 우선지원대상기업</option><option value="u1000">150인 이상 1,000인 미만</option><option value="o1000">1,000인 이상·국가 등</option></select><small>고용보험 회사 부담률이 달라져요</small></label>' +
+        '<label class="f"><span>산재보험 업종</span><select data-k="ind">' + opts + '</select><small>업종별 요율은 <a href="#rates" data-goto="rates">요율표</a>에서 확인</small></label></div></div>';
     },
     round:
-      '<div class="form"><label class="f full"><span>시급·일급 끝전 처리</span><select data-k="round"><option value="round" selected>원 미만 반올림(일반적)</option><option value="floor">원 미만 버림</option><option value="none">끝전 그대로 계산</option></select><small>시급·1일 임금 같은 단가의 원 미만 처리 방법이에요. 마지막 지급액은 원 미만을 버려요.</small></label></div>'
+      '<div class="fs"><label class="f"><span>시급·일급 끝전 처리</span><select data-k="round"><option value="round" selected>원 미만 반올림(일반적)</option><option value="floor">원 미만 버림</option><option value="none">끝전 그대로 계산</option></select><small>시급·1일 임금 같은 단가의 원 미만 처리 방법이에요. 마지막 지급액은 원 미만을 버려요.</small></label></div>'
   };
-  $$('[data-common]').forEach(function (el) {
-    var c = COMMON[el.getAttribute('data-common')];
-    el.outerHTML = typeof c === 'function' ? c() : c;
-  });
+  $$('[data-common]').forEach(function (el) { var c = COMMON[el.getAttribute('data-common')]; el.outerHTML = typeof c === 'function' ? c() : c; });
 
   /* ---------- 입력 읽기 ---------- */
-  function num(v) { v = String(v == null ? '' : v).replace(/[^0-9.\-]/g, ''); var n = parseFloat(v); return isNaN(n) ? 0 : n; }
   function read(pane) {
     var o = {};
     $$('[data-k]', pane).forEach(function (el) {
@@ -69,304 +63,531 @@
     });
     return o;
   }
-  function selText(pane, k) { var s = $('[data-k="' + k + '"]', pane); return s && s.selectedOptions[0] ? (s.selectedOptions[0].getAttribute('data-name') || s.selectedOptions[0].textContent) : ''; }
+  function setK(pane, k, v) { var el = $('[data-k="' + k + '"]', pane); if (el) el.value = v; }
+  function selName(pane, k) { var s = $('[data-k="' + k + '"]', pane); return s && s.selectedOptions[0] ? (s.selectedOptions[0].getAttribute('data-name') || s.selectedOptions[0].textContent) : ''; }
   function setLabel(pane, key, text) { var l = $('[data-lbl="' + key + '"]', pane); if (l) l.textContent = text; }
-  function showIf(pane, o) {
-    $$('[data-show]', pane).forEach(function (el) { var p = el.getAttribute('data-show').split('='); el.hidden = String(o[p[0]]) !== p[1]; });
-  }
-  function hints(pane) {
-    $$('input.money', pane).forEach(function (el) {
-      var k = el.closest('.f'); var h = k && $('.kr', k); if (h) h.textContent = kr(num(el.value));
+  function showIf(pane, o) { $$('[data-show]', pane).forEach(function (el) { var p = el.getAttribute('data-show').split('='); el.hidden = String(o[p[0]]) !== p[1]; }); }
+  function hints(pane) { $$('input.money', pane).forEach(function (el) { var f = el.closest('.f'), h = f && $('.kr', f); if (h) h.textContent = kr(num(el.value)); }); }
+
+  /* ======================================================================
+     결과 문서 모델
+     doc = { title, cond, sum:[{k,v,u,acc}], blocks:[...], notes:[[text, cls]] }
+     block: {t:'slip', left:{head, rows, foot}, right:{...}, fin:[label, value]}
+            {t:'table', title, head:[], rows:[{c:[...], cls}], num:[열 번호]}
+            {t:'calc', title, lines:[]}
+            {t:'text', text, cls}
+     ====================================================================== */
+  function S(k, v, u, acc) { return { k: k, v: v, u: u == null ? '원' : u, acc: acc }; }
+
+  function html(doc) {
+    var h = '<div class="r-head"><h3>' + esc(doc.title) + '</h3><span class="stamp">' + R.asOf + ' 기준 · 참고용</span></div>';
+    if (doc.cond) h += '<p class="r-cond">' + esc(doc.cond) + '</p>';
+    if (doc.sum) h += '<div class="sum">' + doc.sum.map(function (s) { return '<div' + (s.acc ? ' class="acc"' : '') + '><span class="k">' + esc(s.k) + '</span><span class="v">' + esc(s.v) + (s.u ? '<small>' + esc(s.u) + '</small>' : '') + '</span></div>'; }).join('') + '</div>';
+    (doc.blocks || []).forEach(function (b) {
+      h += '<div class="blk">' + (b.title ? '<h4>' + esc(b.title) + '</h4>' : '');
+      if (b.t === 'slip') {
+        var n = Math.max(b.left.rows.length, b.right.rows.length);
+        var side = function (p, cls) {
+          var t = '<table class="' + cls + '"><thead><tr><th>' + esc(p.head[0]) + '</th><th>' + esc(p.head[1]) + '</th></tr></thead><tbody>';
+          for (var i = 0; i < n; i++) { var r = p.rows[i]; t += r ? '<tr><td>' + esc(r[0]) + '</td><td class="n">' + esc(r[1]) + '</td></tr>' : '<tr class="pad"><td>-</td><td></td></tr>'; }
+          return t + '<tr class="tot"><td>' + esc(p.foot[0]) + '</td><td class="n">' + esc(p.foot[1]) + '</td></tr></tbody></table>';
+        };
+        h += '<div class="slip">' + side(b.left, 'l') + side(b.right, 'r') + '<div class="fin"><b>' + esc(b.fin[0]) + '</b><span>' + esc(b.fin[1]) + '</span></div></div>';
+      } else if (b.t === 'table') {
+        var isN = function (i) { return (b.num || []).indexOf(i) >= 0; };
+        h += '<div class="tw"><table class="t"><thead><tr>' + b.head.map(function (x, i) { return '<th' + (isN(i) ? ' class="n"' : '') + '>' + esc(x) + '</th>'; }).join('') + '</tr></thead><tbody>';
+        b.rows.forEach(function (r) {
+          h += '<tr' + (r.cls ? ' class="' + r.cls + '"' : '') + '>' + r.c.map(function (x, i) {
+            var main = Array.isArray(x) ? x[0] : x, sub = Array.isArray(x) ? x[1] : '';
+            return '<td' + (isN(i) ? ' class="n"' : '') + '>' + esc(main) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</td>';
+          }).join('') + '</tr>';
+        });
+        h += '</tbody></table></div>';
+      } else if (b.t === 'calc') h += '<div class="calc">' + esc(b.lines.join('\n')) + '</div>';
+      else if (b.t === 'text') h += '<p class="' + (b.cls || 'muted') + '" style="font-size:.88rem">' + esc(b.text) + '</p>';
+      h += '</div>';
     });
-  }
-
-  /* ---------- 결과 상자 ---------- */
-  function frame(pane, title, cond, body) {
-    var out = $('[data-out]', pane);
-    out.innerHTML =
-      '<div class="r-head"><h3>' + title + '</h3><span class="stamp">' + R.asOf + ' 기준 · 참고용</span></div>' +
-      (cond ? '<p class="r-cond">' + cond + '</p>' : '') + body +
-      '<div class="acts" data-html2canvas-ignore><button class="btn main" data-act="img">이미지로 저장·보내기</button><button class="btn" data-act="link">링크 복사</button><button class="btn" data-act="print">인쇄</button></div>';
-  }
-  function errBox(pane, title, msg) { frame(pane, title, '', '<p class="err">' + msg + '</p>'); }
-
-  function personCond(o) {
-    var s = '가족 ' + (o.fam || 1) + '명';
-    if (o.kids) s += '(8~20세 자녀 ' + o.kids + '명)';
-    if (o.ratio && o.ratio !== '100') s += ' · 원천징수 ' + o.ratio + '%';
-    return s;
-  }
-  function ntCond(o) {
-    var a = [];
-    if (o.meal) a.push('식대 ' + won(o.meal));
-    if (o.car) a.push('자가운전 ' + won(o.car));
-    if (o.child) a.push('보육수당 ' + won(o.child));
-    return a.length ? '비과세 ' + a.join(', ') : '비과세 없음';
-  }
-  function salaryInput(o, gross) {
-    return { gross: gross, nontax: { meal: o.meal, car: o.car, child: o.child, childKids: o.childKids }, fam: Math.max(1, o.fam | 0), kids: Math.max(0, o.kids | 0), ratio: +o.ratio || 100, noNP: o.noNP, noEI: o.noEI, size: o.size, indRate: +o.ind };
-  }
-  function salaryBody(s, pane, o, extraTop) {
-    var e = s.emp, r = s.er, h = '';
-    h += extraTop || '';
-    h += '<table class="rt">';
-    h += cap('직원 급여에서 떼는 금액');
-    h += row('세전 월급', won(s.gross));
-    if (s.nontax.allowed) h += row('그중 비과세', won(s.nontax.allowed), '', 'sub');
-    h += row('국민연금', won(e.np), o.noNP ? '제외' : '4.75%');
-    h += row('건강보험', won(e.hi), '3.595%');
-    h += row('장기요양보험', won(e.ltc), '건강보험료의 13.14%');
-    h += row('고용보험', won(e.ei), o.noEI ? '제외' : '0.9%');
-    h += row('소득세', won(e.tax), '간이세액표');
-    h += row('지방소득세', won(e.local), '소득세의 10%');
-    h += row('공제 합계', won(e.sum), '', 'tot');
-    h += row('실수령액', won(s.net), '', 'tot');
-    h += cap('회사가 따로 내는 금액');
-    h += row('국민연금', won(r.np), '4.75%');
-    h += row('건강보험', won(r.hi), '3.595%');
-    h += row('장기요양보험', won(r.ltc));
-    h += row('고용보험', won(r.ei), (o.noEI ? '제외' : (0.9 + R.ei.extra[o.size || 's150'] * 100).toFixed(2).replace(/0$/, '') + '%'));
-    h += row('산재보험', won(r.ind), selText(pane, 'ind').replace(/ \(.+\)$/, '') + ' ' + o.ind + '‰ + 출퇴근 0.6‰');
-    h += row('회사 부담 4대보험 합계', won(r.sum), '', 'tot');
-    h += row('월 인건비(급여 + 회사 부담)', won(s.cost), '', 'tot');
-    h += row('퇴직금 적립 참고(월급의 1/12)', won(s.severanceMonthly), '1년 이상 근무 시', 'sub');
-    h += '</table>';
-    if (s.nontax.excess > 0) h += '<p class="warnline">비과세 한도를 넘는 ' + won(s.nontax.excess) + '원은 과세 급여로 계산했어요.</p>';
-    if (s.taxable > R.np.max) h += '<p class="muted" style="font-size:.85rem">국민연금은 기준소득월액 상한 ' + won(R.np.max) + '원까지만 매겨요(' + R.np.period + ').</p>';
+    if (doc.notes && doc.notes.length) h += '<ul class="notes">' + doc.notes.map(function (n) { return '<li' + (n[1] ? ' class="' + n[1] + '"' : '') + '>' + esc(n[0]) + '</li>'; }).join('') + '</ul>';
+    h += '<div class="acts noprint"><button class="btn main" type="button" data-act="img">이미지로 보내기</button><button class="btn" type="button" data-act="link">링크 복사</button><button class="btn" type="button" data-act="print">인쇄</button></div>';
     return h;
   }
 
-  /* ---------- 탭별 계산 ---------- */
+  /* ---------- 이미지: 캔버스에 직접 그림(외부 라이브러리 없음) ---------- */
+  var IMG = { ink: '#1d2024', muted: '#5f646b', line: '#dcdcd5', soft: '#f0f1ec', acc: '#1f5a6e', accSoft: '#e4eef1', warn: '#b13b1f', ok: '#2e6b3c', bg: '#ffffff' };
+  var FONT = '"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR","Noto Sans CJK KR",sans-serif';
+  function paint(ctx, doc, W) {
+    var P = 28, x0 = P, x1 = W - P, y = P, cw = x1 - x0;
+    function font(sz, b) { ctx.font = (b ? '700 ' : '400 ') + sz + 'px ' + FONT; }
+    function txt(s, x, yy, col, al) { ctx.fillStyle = col || IMG.ink; ctx.textAlign = al || 'left'; ctx.fillText(s, x, yy); }
+    function hl(yy, w, col, xa, xb) { ctx.fillStyle = col || IMG.line; ctx.fillRect(xa == null ? x0 : xa, yy, (xb == null ? x1 : xb) - (xa == null ? x0 : xa), w || 1); }
+    function box(xa, yy, w, h, col) { ctx.fillStyle = col; ctx.fillRect(xa, yy, w, h); }
+    function wrap(s, maxW) {
+      var out = [], line = '';
+      String(s).split(' ').forEach(function (w) {
+        var t = line ? line + ' ' + w : w;
+        if (ctx.measureText(t).width <= maxW) line = t;
+        else { if (line) out.push(line); line = w; while (ctx.measureText(line).width > maxW) { var k = line.length; while (k > 1 && ctx.measureText(line.slice(0, k)).width > maxW) k--; out.push(line.slice(0, k)); line = line.slice(k); } }
+      });
+      if (line) out.push(line); return out;
+    }
+    ctx.textBaseline = 'alphabetic';
+    // 머리
+    hl(y, 3, IMG.ink); y += 34;
+    font(21, true); txt(doc.title, x0, y);
+    font(12); txt(R.asOf + ' 기준 · 참고용', x1, y, IMG.muted, 'right'); y += 10;
+    if (doc.cond) { font(12.5); wrap(doc.cond, cw).forEach(function (l) { y += 19; txt(l, x0, y, IMG.muted); }); }
+    y += 16;
+    // 요약
+    if (doc.sum) {
+      var n = doc.sum.length, sw = cw / n, sh = 64;
+      hl(y, 1); hl(y + sh, 1);
+      doc.sum.forEach(function (s, i) {
+        var sx = x0 + sw * i;
+        if (s.acc) box(sx, y + 1, sw, sh - 1, IMG.accSoft);
+        if (i) box(sx, y, 1, sh, IMG.line);
+        font(11.5, true); txt(s.k, sx + 12, y + 22, IMG.muted);
+        var vs = s.v, sz = s.acc ? 22 : 19; font(sz, true);
+        while (ctx.measureText(vs + ' ' + s.u).width > sw - 20 && sz > 13) { sz--; font(sz, true); }
+        txt(vs, sx + 12, y + 50, s.acc ? IMG.acc : IMG.ink);
+        var vw = ctx.measureText(vs).width; font(12); txt(s.u, sx + 14 + vw, y + 50, IMG.muted);
+      });
+      y += sh + 18;
+    }
+    (doc.blocks || []).forEach(function (b) {
+      if (b.title) { font(13.5, true); y += 6; txt(b.title, x0, y + 12); y += 22; }
+      if (b.t === 'slip') {
+        var n = Math.max(b.left.rows.length, b.right.rows.length), half = cw / 2, rh = 27;
+        hl(y, 2, IMG.ink); box(x0, y + 2, cw, 28, IMG.soft); font(12, true);
+        txt(b.left.head[0], x0 + half * 0.32, y + 21, IMG.muted, 'center'); txt(b.left.head[1], x0 + half * 0.78, y + 21, IMG.muted, 'center');
+        txt(b.right.head[0], x0 + half + half * 0.32, y + 21, IMG.muted, 'center'); txt(b.right.head[1], x0 + half + half * 0.78, y + 21, IMG.muted, 'center');
+        y += 30; hl(y, 1, IMG.ink);
+        var top = y;
+        for (var i = 0; i < n; i++) {
+          font(13);
+          [[b.left, x0], [b.right, x0 + half]].forEach(function (pr) { var r = pr[0].rows[i]; if (r) { txt(r[0], pr[1] + 10, y + 19); txt(r[1], pr[1] + half - 10, y + 19, IMG.ink, 'right'); } });
+          y += rh; hl(y, 1);
+        }
+        hl(y, 2, IMG.ink); font(13, true);
+        txt(b.left.foot[0], x0 + 10, y + 21); txt(b.left.foot[1], x0 + half - 10, y + 21, IMG.ink, 'right');
+        txt(b.right.foot[0], x0 + half + 10, y + 21); txt(b.right.foot[1], x1 - 10, y + 21, IMG.ink, 'right');
+        box(x0 + half, top, 1, y + 30 - top, IMG.line);
+        y += 30; hl(y, 2, IMG.ink);
+        box(x0, y + 2, cw, 44, IMG.accSoft); font(14, true); txt(b.fin[0], x0 + 12, y + 30);
+        font(22, true); txt(b.fin[1], x1 - 12, y + 32, IMG.acc, 'right');
+        y += 46; hl(y, 2, IMG.ink); y += 18;
+      } else if (b.t === 'table') {
+        var cols = b.head.length, isN = function (i) { return (b.num || []).indexOf(i) >= 0; };
+        font(12.5);
+        var widths = b.head.map(function (hd, i) { var m = 0; ctx.font = '700 12px ' + FONT; m = ctx.measureText(hd).width; font(12.5); b.rows.forEach(function (r) { var c = r.c[i]; var s = Array.isArray(c) ? c[0] : c; m = Math.max(m, ctx.measureText(String(s)).width); }); return m + 18; });
+        var tot = widths.reduce(function (a, c) { return a + c; }, 0), scale = cw / tot;
+        if (scale < 1) { var fs = Math.max(9.5, 12.5 * scale); widths = widths.map(function (w) { return w * scale; }); font(fs); } else widths = widths.map(function (w, i) { return i === 0 ? w + (cw - tot) : w; });
+        var fsz = scale < 1 ? Math.max(9.5, 12.5 * scale) : 12.5;
+        var xs = [x0]; widths.forEach(function (w, i) { xs.push(xs[i] + w); });
+        hl(y, 2, IMG.ink); box(x0, y + 2, cw, 26, IMG.soft);
+        ctx.font = '700 ' + Math.min(12, fsz) + 'px ' + FONT;
+        b.head.forEach(function (hd, i) { txt(hd, isN(i) ? xs[i + 1] - 8 : xs[i] + 8, y + 19, IMG.muted, isN(i) ? 'right' : 'left'); });
+        y += 28;
+        b.rows.forEach(function (r) {
+          var hasSub = r.c.some(function (c) { return Array.isArray(c) && c[1]; }), rh = hasSub ? 40 : 26;
+          if (r.cls === 'tot') hl(y - 1, 2, IMG.ink); else if (r.cls === 'hl') box(x0, y, cw, rh, IMG.accSoft);
+          r.c.forEach(function (c, i) {
+            var main = Array.isArray(c) ? c[0] : c, sub = Array.isArray(c) ? c[1] : '';
+            ctx.font = (r.cls === 'tot' || r.cls === 'grp' ? '700 ' : '400 ') + fsz + 'px ' + FONT;
+            txt(String(main), isN(i) ? xs[i + 1] - 8 : xs[i] + 8 + (r.cls === 'ind' && i === 0 ? 12 : 0), y + 18, IMG.ink, isN(i) ? 'right' : 'left');
+            if (sub) { ctx.font = '400 ' + (fsz - 2) + 'px ' + FONT; txt(String(sub), isN(i) ? xs[i + 1] - 8 : xs[i] + 8, y + 33, IMG.muted, isN(i) ? 'right' : 'left'); }
+          });
+          y += rh; hl(y, 1);
+        });
+        y += 16;
+      } else if (b.t === 'calc') {
+        ctx.font = '400 12.5px ui-monospace,Menlo,Consolas,' + FONT;
+        var lh = 21, bh = b.lines.length * lh + 16; box(x0, y, cw, bh, IMG.soft);
+        b.lines.forEach(function (l, i) { txt(l, x0 + 12, y + 22 + i * lh); });
+        y += bh + 14;
+      } else if (b.t === 'text') {
+        font(13, b.cls === 'w' || b.cls === 'ok');
+        wrap(b.text, cw).forEach(function (l) { y += 19; txt(l, x0, y, b.cls === 'w' ? IMG.warn : b.cls === 'ok' ? IMG.ok : IMG.muted); }); y += 12;
+      }
+    });
+    if (doc.notes && doc.notes.length) {
+      font(12);
+      doc.notes.forEach(function (nn) { ctx.font = (nn[1] ? '700 ' : '400 ') + '12px ' + FONT; wrap('· ' + nn[0], cw).forEach(function (l) { y += 18; txt(l, x0, y, nn[1] === 'w' ? IMG.warn : nn[1] === 'ok' ? IMG.ok : IMG.muted); }); });
+      y += 10;
+    }
+    y += 14; hl(y, 1); y += 20; font(11);
+    txt('급여·노무 계산기 · tax-ean.github.io/tools/salary-calculator', x0, y, IMG.muted);
+    return y + P;
+  }
+  function docImage(doc) {
+    var W = 720, sc = 2, m = document.createElement('canvas').getContext('2d');
+    var H = Math.ceil(paint(m, doc, W));
+    var cv = document.createElement('canvas'); cv.width = W * sc; cv.height = H * sc;
+    var ctx = cv.getContext('2d'); ctx.scale(sc, sc); ctx.fillStyle = IMG.bg; ctx.fillRect(0, 0, W, H);
+    paint(ctx, doc, W); return cv;
+  }
+
+  /* ---------- 결과 넣기 ---------- */
+  var DOCS = {};
+  function show(pane, doc) { DOCS[pane.id] = doc; $('[data-out]', pane).innerHTML = html(doc); }
+  function err(pane, title, msg) { DOCS[pane.id] = null; $('[data-out]', pane).innerHTML = '<div class="r-head"><h3>' + esc(title) + '</h3></div><p class="err">' + esc(msg) + '</p>'; }
+
+  /* ---------- 급여 ---------- */
+  function salaryInput(o, gross) {
+    return { gross: gross, nontax: { meal: o.meal, car: o.car, child: o.child, childKids: o.childKids }, fam: Math.max(1, o.fam | 0), kids: Math.max(0, o.kids | 0), ratio: +o.ratio || 100, noNP: o.noNP, noEI: o.noEI, size: o.size, indRate: +o.ind, npBase: o.npBase, hiBase: o.hiBase };
+  }
+  function personCond(o) { return '가족 ' + (o.fam || 1) + '명' + (o.kids ? '(8~20세 자녀 ' + o.kids + '명)' : '') + (o.ratio && o.ratio !== '100' ? ' · 원천징수 ' + o.ratio + '%' : ''); }
+  function ntCond(o) { var a = []; if (o.meal) a.push('식대 ' + won(o.meal)); if (o.car) a.push('자가운전 ' + won(o.car)); if (o.child) a.push('보육수당 ' + won(o.child)); return a.length ? '비과세 ' + a.join(', ') : '비과세 없음'; }
+  function salaryDoc(s, pane, o, title, cond, extraNotes) {
+    var e = s.emp, r = s.er, ntPaid = (o.meal || 0) + (o.car || 0) + (o.child || 0);
+    var left = [['기본급 등(과세)', won(s.gross - ntPaid)]];
+    if (o.meal) left.push(['식대', won(o.meal)]);
+    if (o.car) left.push(['자가운전보조금', won(o.car)]);
+    if (o.child) left.push(['출산·보육수당', won(o.child)]);
+    var right = [['국민연금', won(e.np)], ['건강보험', won(e.hi)], ['장기요양보험', won(e.ltc)], ['고용보험', won(e.ei)], ['소득세', won(e.tax)], ['지방소득세', won(e.local)]];
+    var eiRate = o.noEI ? '제외' : '0.9% / ' + (0.9 + R.ei.extra[o.size || 's150'] * 100).toFixed(2).replace(/0$/, '') + '%';
+    var ins = [
+      { c: [['국민연금', '기준 ' + won(s.npBase) + '원'], o.noNP ? '제외' : '4.75% / 4.75%', won(e.np), won(r.np), won(e.np + r.np)] },
+      { c: [['건강보험', '기준 ' + won(s.hiBase) + '원'], '3.595% / 3.595%', won(e.hi), won(r.hi), won(e.hi + r.hi)] },
+      { c: [['장기요양보험', '건강보험료의 13.14%'], '반씩', won(e.ltc), won(r.ltc), won(e.ltc + r.ltc)] },
+      { c: [['고용보험', '회사분에 고용안정·직업능력개발 포함'], eiRate, won(e.ei), won(r.ei), won(e.ei + r.ei)] },
+      { c: [['산재보험', selName(pane, 'ind') + ' ' + o.ind + '‰ + 출퇴근 0.6‰'], '회사 전액', '0', won(r.ind), won(r.ind)] },
+      { c: ['합계', '', won(e.ins), won(r.sum), won(e.ins + r.sum)], cls: 'tot' }
+    ];
+    var notes = (extraNotes || []).slice();
+    if (s.nontax.excess > 0) notes.push(['비과세 한도를 넘는 ' + won(s.nontax.excess) + '원은 과세 급여로 계산했어요.', 'w']);
+    if (!o.npBase && s.taxable > R.np.max) notes.push(['국민연금은 기준소득월액 상한 ' + won(R.np.max) + '원까지만 매겨요(' + R.np.period + ').']);
+    notes.push(['소득세는 근로소득 간이세액표(2026.3.1 시행)로 계산했어요. 연말정산 결과와 다를 수 있어요.']);
+    notes.push([ROUNDNOTE]);
+    return {
+      title: title, cond: cond,
+      sum: [S('세전 급여', won(s.gross)), S('공제 합계', won(e.sum)), S('실수령액', won(s.net), '원', true), S('회사 월 인건비', won(s.cost))],
+      blocks: [
+        { t: 'slip', title: '급여명세서(참고용)', left: { head: ['지급 내역', '지급액'], rows: left, foot: ['지급액 계', won(s.gross)] }, right: { head: ['공제 내역', '공제액'], rows: right, foot: ['공제액 계', won(e.sum)] }, fin: ['차인지급액(실수령액)', won(s.net) + '원'] },
+        { t: 'table', title: '4대보험 부담 내역(근로자 / 회사)', head: ['구분', '요율(근로자/회사)', '근로자', '회사', '합계'], num: [2, 3, 4], rows: ins },
+        { t: 'table', title: '회사가 쓰는 돈(월)', head: ['항목', '금액'], num: [1], rows: [
+          { c: ['세전 급여', won(s.gross)] }, { c: ['회사 부담 4대보험', won(r.sum)] }, { c: ['월 인건비 합계', won(s.cost)], cls: 'tot' },
+          { c: [['퇴직금 적립 참고(월급의 1/12)', '1년 이상 근무하면 퇴직금이 생겨요'], won(s.severanceMonthly)] }] }
+      ],
+      notes: notes
+    };
+  }
+
   var CALC = {
     pay: function (pane, o) {
-      setLabel(pane, 'amount', o.basis === 'month' ? '월급(세전)' : '연봉(세전)');
       showIf(pane, o);
-      var monthly = o.basis === 'month' ? o.amount : o.amount / (o.sev13 ? 13 : 12);
-      var nt = (o.meal || 0) + (o.car || 0) + (o.child || 0);
-      var gross = Math.round(o.inclNT ? monthly : monthly + nt);
-      if (gross <= 0) return errBox(pane, '급여 계산 결과', '금액을 입력해주세요.');
-      if (o.inclNT && nt > gross) return errBox(pane, '급여 계산 결과', '비과세 수당이 월급보다 커요. 금액을 확인해주세요.');
-      var s = C.salary(salaryInput(o, gross));
-      var top = '<div class="bigs">' + big('월 실수령액', won(s.net)) + big('회사 월 인건비', won(s.cost)) + '</div>';
-      var cond = (o.basis === 'month' ? '월급 ' : '연봉 ') + won(o.amount) + '원' + (o.basis === 'year' && o.sev13 ? '(퇴직금 포함, ÷13)' : '') + ' · ' + ntCond(o) + ' · ' + personCond(o);
-      frame(pane, '급여 계산 결과', cond, top + salaryBody(s, pane, o) +
-        '<p class="muted" style="font-size:.85rem">연간 실수령액 약 ' + won(s.net * 12) + '원 · 회사 연간 인건비 약 ' + won(s.cost * 12) + '원(퇴직금 제외)</p>');
-    },
-    rev: function (pane, o) {
-      if (o.target <= 0) return errBox(pane, '세후→세전 계산 결과', '원하는 실수령액을 입력해주세요.');
-      var s = C.salaryReverse(salaryInput(o, 0), o.target, +o.step || 1);
-      var diff = s.net - o.target;
-      var top = '<div class="bigs">' + big('필요한 세전 월급', won(s.gross)) + big('회사 월 인건비', won(s.cost)) + '</div>' +
-        '<p class="' + (diff ? 'muted' : 'okline') + '" style="font-size:.88rem">이 금액이면 실수령액은 ' + won(s.net) + '원' + (diff ? '(목표보다 ' + won(diff) + '원 많음)' : '으로 목표와 같아요') + '. 세전 연봉으로는 ' + won(s.gross * 12) + '원이에요.</p>';
-      frame(pane, '세후→세전 계산 결과', '목표 실수령액 ' + won(o.target) + '원 · ' + ntCond(o) + ' · ' + personCond(o), top + salaryBody(s, pane, o));
-    },
-    day: function (pane, o) {
-      setLabel(pane, 'dayAmount', o.mode === 'rev' ? '1일 실지급액(차인지급액)' : '세전 일당');
-      var days = Math.max(1, o.days | 0), opt = { days: days, noEI: o.o65 };
-      if (o.amount <= 0) return errBox(pane, '일용직 계산 결과', '금액을 입력해주세요.');
-      var d = o.mode === 'rev' ? C.dailyReverse(opt, o.amount) : C.daily(Object.assign({ wage: o.amount }, opt));
-      var top = '<div class="bigs">' + big('세전 일당', won(d.wage)) + big(days > 1 ? days + '일 실지급액 합계' : '실지급액', won(d.net)) + '</div>';
-      var h = top + '<table class="rt">' +
-        row('세전 일당 × ' + days + '일', won(d.total)) +
-        row('고용보험', won(d.ei), o.o65 ? '65세 이상 제외' : '0.9%') +
-        row('소득세', won(d.tax), d.small ? '1천원 미만이라 떼지 않음' : '(일당 − 15만원) × 2.7%') +
-        row('지방소득세', won(d.local), '소득세의 10%') +
-        row('공제 합계', won(d.ded), '', 'tot') + row('실지급액', won(d.net), '', 'tot') + '</table>';
-      var cond = [];
-      if (o.ws || o.we) cond.push('근무 ' + (o.ws || '?') + ' ~ ' + (o.we || '?'));
-      if (o.pd) cond.push('지급일 ' + o.pd);
-      cond.push(days + '일');
-      if (o.o65) cond.push('65세 이상');
-      frame(pane, '일용직 계산 결과', cond.join(' · '), h + '<p class="muted" style="font-size:.85rem">국민연금·건강보험은 넣지 않았어요. 아래 참고사항을 확인해주세요.</p>');
-    },
-    biz: function (pane, o) {
-      setLabel(pane, 'bizAmount', o.mode === 'rev' ? '실제로 줄 금액(세후)' : '지급할 금액(세전)');
-      if (o.amount <= 0) return errBox(pane, '사업소득 계산 결과', '금액을 입력해주세요.');
-      var b = o.mode === 'rev' ? C.bizReverse(o.amount) : C.biz(o.amount);
-      frame(pane, '3.3% 사업소득 계산 결과', o.mode === 'rev' ? '세후 ' + won(o.amount) + '원 기준' : '세전 ' + won(o.amount) + '원 기준',
-        '<div class="bigs">' + big('세전 지급액', won(b.gross)) + big('실지급액', won(b.net)) + '</div><table class="rt">' +
-        row('세전 지급액', won(b.gross)) + row('소득세', won(b.tax), '3%') + row('지방소득세', won(b.local), '소득세의 10%') +
-        row('공제 합계', won(b.ded), '', 'tot') + row('실지급액', won(b.net), '', 'tot') + '</table>' +
-        '<p class="muted" style="font-size:.85rem">10원 미만은 버렸어요. 원천징수한 세금은 다음 달 10일까지 신고·납부해요.</p>');
-    },
-    table: function (pane, o) {
-      var rg = (o.range || '20-100').split('-'), lo = +rg[0], hi = +rg[1], meal = +o.meal || 0;
-      var h = '<div class="tw"><table class="t"><thead><tr><th class="n">연봉</th><th class="n">월급</th><th class="n">국민연금</th><th class="n">건강+요양</th><th class="n">고용</th><th class="n">소득세+지방</th><th class="n">월 실수령액</th></tr></thead><tbody>';
-      for (var m = lo; m <= hi; m++) {
-        var g = Math.round(m * 1e6 / 12);
-        var s = C.salary({ gross: g, nontax: { meal: Math.min(meal, g) }, fam: +o.fam, kids: +o.kids, ratio: 100 });
-        var e = s.emp;
-        h += '<tr' + (m % 10 === 0 ? ' class="hl"' : '') + '><td class="n">' + won(m * 100) + '만</td><td class="n">' + won(g) + '</td><td class="n">' + won(e.np) + '</td><td class="n">' + won(e.hi + e.ltc) + '</td><td class="n">' + won(e.ei) + '</td><td class="n">' + won(e.tax + e.local) + '</td><td class="n"><b>' + won(s.net) + '</b></td></tr>';
+      setLabel(pane, 'amount', o.basis === 'year' ? '연봉(세전)' : '월급(세전)');
+      var ntPaid = (o.meal || 0) + (o.car || 0) + (o.child || 0), s, cond, notes = [];
+      if (o.mode === 'net') {
+        if (o.target <= 0) return err(pane, '급여 계산 결과', '월 실수령액을 입력해주세요.');
+        s = C.salaryReverse(salaryInput(o, 0), o.target, 1);
+        cond = '실수령액 ' + won(o.target) + '원으로 계산 · ' + ntCond(o) + ' · ' + personCond(o);
+        var diff = s.net - o.target;
+        notes.push(diff ? ['실수령액 ' + won(o.target) + '원 이상이 되는 가장 작은 세전 급여예요. 간이세액표 구간 때문에 실수령액이 ' + won(diff) + '원 많아요.'] : ['세전 급여 ' + won(s.gross) + '원이면 실수령액이 정확히 ' + won(o.target) + '원이에요.', 'ok']);
+        notes.push(['세전 연봉으로는 ' + won(s.gross * 12) + '원(퇴직금 별도)이에요.']);
+      } else {
+        var monthly = o.basis === 'month' ? o.amount : o.amount / (o.sev13 ? 13 : 12);
+        var gross = Math.round(o.inclNT ? monthly : monthly + ntPaid);
+        if (gross <= 0) return err(pane, '급여 계산 결과', '금액을 입력해주세요.');
+        if (o.inclNT && ntPaid > gross) return err(pane, '급여 계산 결과', '비과세 수당이 월급보다 커요. 금액을 확인해주세요.');
+        s = C.salary(salaryInput(o, gross));
+        cond = (o.basis === 'month' ? '월급 ' : '연봉 ') + won(o.amount) + '원' + (o.basis === 'year' ? (o.sev13 ? '(퇴직금 포함 ÷13)' : '(÷12)') : '') + ' · ' + ntCond(o) + ' · ' + personCond(o);
+        notes.push(['연간 실수령액 약 ' + won(s.net * 12) + '원 · 회사 연간 인건비 약 ' + won(s.cost * 12) + '원(퇴직금 제외)']);
       }
-      h += '</tbody></table></div>';
-      frame(pane, '연봉별 월 실수령액', '가족 ' + o.fam + '명' + (+o.kids ? '(8~20세 자녀 ' + o.kids + '명)' : '') + ' · ' + (meal ? '비과세 식대 월 20만원 포함' : '비과세 없음') + ' · 퇴직금 별도 연봉 ÷ 12', h);
+      if (o.npBase || o.hiBase) notes.push(['국민연금·건강보험은 직접 넣은 신고 금액으로 계산했어요.']);
+      show(pane, salaryDoc(s, pane, o, '급여 계산 결과', cond, notes));
     },
+
+    table: function (pane, o) {
+      var rg = (o.range || '20-100').split('-'), lo = +rg[0], hi = +rg[1], meal = +o.meal || 0, rows = [];
+      for (var m = lo; m <= hi; m++) {
+        var g = Math.round(m * 1e6 / 12), s = C.salary({ gross: g, nontax: { meal: Math.min(meal, g) }, fam: +o.fam, kids: +o.kids, ratio: 100 }), e = s.emp;
+        rows.push({ c: [won(m * 100) + '만', won(g), won(e.np), won(e.hi + e.ltc), won(e.ei), won(e.tax + e.local), won(s.net)], cls: m % 10 === 0 ? 'hl' : '' });
+      }
+      show(pane, { title: '연봉별 월 실수령액', cond: '가족 ' + o.fam + '명' + (+o.kids ? '(8~20세 자녀 ' + o.kids + '명)' : '') + ' · ' + (meal ? '비과세 식대 월 20만원 포함' : '비과세 없음') + ' · 퇴직금 별도 연봉 ÷ 12',
+        blocks: [{ t: 'table', head: ['연봉', '월 세전', '국민연금', '건강+요양', '고용보험', '소득세+지방', '월 실수령액'], num: [0, 1, 2, 3, 4, 5, 6], rows: rows }], notes: [[ROUNDNOTE]] });
+    },
+
+    day: function (pane, o) {
+      setLabel(pane, 'dayAmount', o.mode === 'net' ? '1일 실지급액' : '세전 일당');
+      var picked = dayPicker(pane, o);
+      var days = picked ? picked.length : Math.max(1, o.days | 0);
+      if (picked) setK(pane, 'days', days);
+      if (o.amount <= 0) return err(pane, '일용직 계산 결과', '금액을 입력해주세요.');
+      if (!days) return err(pane, '일용직 계산 결과', '근무한 날을 하루 이상 골라주세요.');
+      var opt = { days: days, noEI: o.o65 };
+      var wage = o.mode === 'net' ? C.dailyReverse({ days: 1, noEI: o.o65 }, o.amount).wage : o.amount; // 1일 기준으로 일당을 정하고
+      var d = C.daily(Object.assign({ wage: wage }, opt)); // 근무일수만큼 합계
+      var one = C.daily({ wage: d.wage, days: 1, noEI: o.o65 });
+      var blocks = [{ t: 'table', title: '공제 내역', head: ['항목', '1일 기준', days + '일 합계'], num: [1, 2], rows: [
+        { c: ['세전 일당 / 지급총액', won(one.total), won(d.total)] },
+        { c: [['고용보험', o.o65 ? '65세 이상 제외' : '0.9%'], won(one.ei), won(d.ei)] },
+        { c: [['소득세', '(일당 − 15만원) × 6% × 45%'], won(one.tax), won(d.tax)] },
+        { c: [['지방소득세', '소득세의 10%'], won(one.local), won(d.local)] },
+        { c: ['공제 합계', won(one.ded), won(d.ded)], cls: 'tot' },
+        { c: ['실지급액', won(one.net), won(d.net)], cls: 'tot' }] }];
+      if (picked) blocks.push({ t: 'text', text: '근무일(' + days + '일): ' + picked.map(function (x) { return md(x) + '(' + WD[x.getUTCDay()] + ')'; }).join(', ') });
+      var notes = [];
+      if (d.small) notes.push(['소득세가 1천원 미만이라 떼지 않았어요(소액부징수).']);
+      notes.push(['소득세는 지급하는 날 기준으로, 이번에 지급하는 금액 전체로 1천원 미만인지 판단해요.']);
+      notes.push(['국민연금·건강보험은 넣지 않았어요. 아래 일용직 참고사항을 확인해주세요.', 'w']);
+      notes.push([ROUNDNOTE]);
+      show(pane, { title: '일용직 계산 결과', cond: (o.ws && o.we ? '근무 ' + o.ws + ' ~ ' + o.we + ' · ' : '') + days + '일' + (o.o65 ? ' · 65세 이상' : '') + ' · ' + (o.mode === 'net' ? '1일 실지급액 ' + won(o.amount) + '원 기준' : '세전 일당 ' + won(o.amount) + '원 기준'),
+        sum: [S('세전 일당', won(d.wage), '원', o.mode === 'net'), S('근무일수', days, '일'), S('1일 실지급액', won(one.net), '원', o.mode !== 'net'), S(days + '일 실지급액', won(d.net))], blocks: blocks, notes: notes });
+    },
+
+    biz: function (pane, o) {
+      setLabel(pane, 'bizAmount', o.mode === 'net' ? '실지급액(3.3% 뗀 후)' : '세전 지급액');
+      if (o.amount <= 0) return err(pane, '사업소득 계산 결과', '금액을 입력해주세요.');
+      var b = o.mode === 'net' ? C.bizReverse(o.amount) : C.biz(o.amount);
+      show(pane, { title: '3.3% 사업소득 계산 결과', cond: (o.mode === 'net' ? '실지급액 ' : '세전 지급액 ') + won(o.amount) + '원 기준',
+        sum: [S('세전 지급액', won(b.gross), '원', o.mode === 'net'), S('공제 합계', won(b.ded)), S('실지급액', won(b.net), '원', o.mode !== 'net')],
+        blocks: [{ t: 'table', head: ['항목', '금액'], num: [1], rows: [{ c: ['세전 지급액', won(b.gross)] }, { c: [['소득세', '3%'], won(b.tax)] }, { c: [['지방소득세', '소득세의 10%'], won(b.local)] }, { c: ['공제 합계', won(b.ded)], cls: 'tot' }, { c: ['실지급액', won(b.net)], cls: 'tot' }] }],
+        notes: [['원천징수한 세금은 지급한 달의 다음 달 10일까지 신고·납부해요.'], [ROUNDNOTE]] });
+    },
+
+    ord: function (pane, o) {
+      var dayH = o.dayH || 8, wdays = o.wdays || 5, weekH = dayH * wdays;
+      var holiday = weekH >= 15 ? Math.min(8, weekH / 40 * 8) : 0;
+      var auto = C.monthlyHours(weekH), hours = o.hoursOv > 0 ? o.hoursOv : auto;
+      var mh = $('.mh', pane); if (mh) mh.textContent = '비워두면 자동 계산: 주 ' + wonD(weekH) + '시간 + 주휴 ' + wonD(holiday) + '시간 → 월 ' + auto + '시간';
+      var bonusM = (o.bonusY || 0) / 12, ordM = (o.base || 0) + (o.fixed || 0) + bonusM;
+      if (ordM <= 0) return err(pane, '통상임금 계산 결과', '월 기본급을 입력해주세요.');
+      var hourly = C.unit(ordM / hours, o.round), daily = C.unit(hourly * dayH, o.round);
+      var rows = [{ c: ['월 기본급', won(o.base || 0)] }, { c: ['월 고정수당', won(o.fixed || 0)] }];
+      if (o.bonusY) rows.push({ c: [['정기상여금 월 환산', '연 ' + won(o.bonusY) + ' ÷ 12'], won(bonusM)] });
+      rows.push({ c: ['월 통상임금', won(ordM)], cls: 'tot' });
+      show(pane, { title: '통상임금 계산 결과', cond: '1일 ' + wonD(dayH) + '시간 · 주 ' + wonD(wdays) + '일',
+        sum: [S('시간당 통상임금', wonD(hourly), '원', true), S('1일 통상임금', wonD(daily)), S('월 통상임금', won(ordM))],
+        blocks: [
+          { t: 'table', title: '근로시간', head: ['항목', '시간'], num: [1], rows: [{ c: ['주 소정근로시간', wonD(weekH) + '시간'] }, { c: [['주휴시간', '주 15시간 이상이면 생겨요'], wonD(holiday) + '시간'] }, { c: [['월 소정근로시간', o.hoursOv > 0 ? '직접 입력' : '(주 소정 + 주휴) × 365 ÷ 7 ÷ 12'], wonD(hours) + '시간'], cls: 'tot' }] },
+          { t: 'table', title: '월 통상임금', head: ['항목', '금액'], num: [1], rows: rows },
+          { t: 'calc', title: '계산식', lines: ['시간당 통상임금 = ' + won(ordM) + ' ÷ ' + wonD(hours) + '시간 = ' + wonD(hourly) + '원', '1일 통상임금   = ' + wonD(hourly) + ' × ' + wonD(dayH) + '시간 = ' + wonD(daily) + '원'] }],
+        notes: [['통상시급은 연장·야간·휴일수당, 1일 통상임금은 연차수당 계산에 써요.'], [ROUNDNOTE]] });
+    },
+
+    sev: function (pane, o) {
+      var a = C.D(o.join), b = C.D(o.last);
+      var info = $('.svcinfo', pane);
+      if (a && b && b >= a) { var dd = C.daysBetween(a, b) - (o.excl | 0), mm = C.monthsDiff(a, b) + 1; info.textContent = '재직일수 ' + won(dd) + '일 (약 ' + Math.floor(mm / 12) + '년 ' + (mm % 12) + '개월)'; }
+      var p = buildSegs(pane, o);
+      if (!p) return err(pane, '퇴직금 계산 결과', '입사일과 마지막 근무일을 확인해주세요.');
+      o = read(pane);
+      var amts = p.segs.map(function (s, i) { return (o['s' + i + 'b'] || 0) + (o['s' + i + 'o'] || 0); });
+      var ord = o.ord || 0;
+      var s = C.severance({ join: o.join, lastDay: o.last, excludeDays: o.excl | 0, segAmounts: amts, bonus: o.bonus, leavePay: o.leaveP, ordinaryMonthly: ord, hours: 209, dayHours: 8, round: o.round });
+      if (s.error) return err(pane, '퇴직금 계산 결과', s.error);
+      var aw = s.aw, t = s.rt;
+      var segRows = p.segs.map(function (sg, i) {
+        return { c: [[C.ymd(sg.start).slice(2).replace(/-/g, '.') + ' ~ ' + C.ymd(sg.end).slice(5).replace('-', '.'), sg.full ? '' : '한 달이 안 되는 기간'], sg.days + '일', won(o['s' + i + 'b'] || 0), won(o['s' + i + 'o'] || 0), won(amts[i])] };
+      });
+      var sumB = p.segs.reduce(function (x, sg, i) { return x + (o['s' + i + 'b'] || 0); }, 0), sumO = p.segs.reduce(function (x, sg, i) { return x + (o['s' + i + 'o'] || 0); }, 0);
+      segRows.push({ c: ['3개월 합계', p.days + '일', won(sumB), won(sumO), won(aw.wages)], cls: 'tot' });
+      var avgRows = [{ c: ['3개월 임금총액', won(aw.wages)] }];
+      if (o.bonus) avgRows.push({ c: [['상여금 3/12', '1년 ' + won(o.bonus) + ' × 3/12'], won(o.bonus * 3 / 12)] });
+      if (o.leaveP) avgRows.push({ c: [['연차수당 3/12', '1년 ' + won(o.leaveP) + ' × 3/12'], won(o.leaveP * 3 / 12)] });
+      avgRows.push({ c: [['1일 평균임금', won(aw.wages + aw.add) + ' ÷ ' + p.days + '일'], wonD(aw.avg)], cls: 'tot' });
+      if (ord) avgRows.push({ c: [['1일 통상임금(비교)', won(ord) + ' ÷ 209 × 8'], wonD(aw.ordDay)] });
+      avgRows.push({ c: [['퇴직금에 쓸 1일 임금', aw.usedOrdinary ? '평균임금이 적어서 통상임금 적용' : '평균임금 적용'], wonD(aw.applied)], cls: 'tot' });
+      var notes = [];
+      if (s.under1y) notes.push(['재직기간이 1년 미만이라 퇴직금 지급 대상이 아닐 수 있어요.', 'w']);
+      notes.push(['퇴직금에서 건강보험·고용보험 정산분은 빼지 않았어요. 퇴사 달 급여에서 따로 정산해요.']);
+      notes.push([ROUNDNOTE]);
+      show(pane, { title: '평균임금 · 퇴직금 계산 결과', cond: o.join + ' 입사 ~ ' + o.last + ' 퇴사 · 재직 ' + won(s.days) + '일',
+        sum: [S(aw.usedOrdinary ? '적용 1일 임금(통상)' : '1일 평균임금', wonD(aw.applied)), S('퇴직금(세전)', won(s.pay)), S('퇴직소득세+지방세', won(t.tax + t.local)), S('실지급액', won(s.net), '원', true)],
+        blocks: [
+          { t: 'table', title: '1. 퇴직 전 3개월 임금', head: ['기간', '일수', '기본급', '기타수당', '합계'], num: [1, 2, 3, 4], rows: segRows },
+          { t: 'table', title: '2. 1일 평균임금', head: ['항목', '금액'], num: [1], rows: avgRows },
+          { t: 'table', title: '3. 퇴직금', head: ['항목', '금액'], num: [1], rows: [
+            { c: [['재직일수', o.join + ' ~ ' + o.last + (o.excl ? ', 제외 ' + o.excl + '일' : '')], won(s.days) + '일'] },
+            { c: [['퇴직금', wonD(aw.applied) + ' × ' + won(s.days) + '일 × 30 ÷ 365'], won(s.pay)], cls: 'tot' }] },
+          { t: 'table', title: '4. 퇴직소득세', head: ['항목', '금액'], num: [1], rows: [
+            { c: [['근속연수', '1년 미만 끝수는 1년'], t.years + '년'] }, { c: ['근속연수공제', won(t.serviceDed)] },
+            { c: [['환산급여', '(퇴직금 − 근속연수공제) × 12 ÷ 근속연수'], won(t.conv)] }, { c: ['환산급여공제', won(t.convDed)] },
+            { c: ['과세표준', won(t.base)] }, { c: ['환산산출세액', won(t.convTax)] },
+            { c: [['퇴직소득세', '환산산출세액 × 근속연수 ÷ 12'], won(t.tax)] }, { c: [['지방소득세', '소득세의 10%'], won(t.local)] },
+            { c: ['세금 합계', won(t.tax + t.local)], cls: 'tot' }, { c: ['퇴직금 실지급액', won(s.net)], cls: 'tot' }] }],
+        notes: notes });
+    },
+
     leave: function (pane, o) {
-      if (o.ord <= 0) return errBox(pane, '연차수당 계산 결과', '월 통상임금을 입력해주세요.');
+      if (o.ord <= 0) return err(pane, '연차수당 계산 결과', '월 통상임금을 입력해주세요.');
       var l = C.leavePay({ ordinaryMonthly: o.ord, hours: o.hours || 209, dayHours: o.dayH || 8, days: o.days, round: o.round });
-      var calc = '시급        = ' + won(o.ord) + ' ÷ ' + (o.hours || 209) + ' = ' + wonD(l.hourly) + '원\n' +
-        '1일 통상임금 = ' + wonD(l.hourly) + ' × ' + (o.dayH || 8) + ' = ' + wonD(l.daily) + '원\n' +
-        '연차수당    = ' + wonD(l.daily) + ' × ' + o.days + '일 = ' + won(l.pay) + '원';
-      frame(pane, '연차수당 계산 결과', '월 통상임금 ' + won(o.ord) + '원 · 남은 연차 ' + o.days + '일',
-        big('연차수당', won(l.pay)) + '<div class="calc">' + calc + '</div><p class="muted" style="font-size:.85rem">연차수당도 근로소득이라 지급하는 달 급여에 더해서 4대보험·소득세를 계산해요.</p>');
+      show(pane, { title: '연차수당 계산 결과', cond: '월 통상임금 ' + won(o.ord) + '원 · 남은 연차 ' + o.days + '일',
+        sum: [S('통상시급', wonD(l.hourly)), S('1일 통상임금', wonD(l.daily)), S('연차수당', won(l.pay), '원', true)],
+        blocks: [{ t: 'calc', title: '계산식', lines: ['시급        = ' + won(o.ord) + ' ÷ ' + (o.hours || 209) + ' = ' + wonD(l.hourly) + '원', '1일 통상임금 = ' + wonD(l.hourly) + ' × ' + (o.dayH || 8) + ' = ' + wonD(l.daily) + '원', '연차수당    = ' + wonD(l.daily) + ' × ' + o.days + '일 = ' + won(l.pay) + '원'] }],
+        notes: [['연차수당도 근로소득이라, 지급하는 달 급여에 더해서 4대보험·소득세를 계산해요.'], [ROUNDNOTE]] });
     },
+
     prorate: function (pane, o) {
       var p = C.prorate(o.s, o.e, o.method);
-      if (p.error) return errBox(pane, '일할계산 결과', p.error);
+      if (p.error) return err(pane, '일할계산 결과', p.error);
       var items = [['기본급', 'i_base'], ['연장수당', 'i_ot'], ['휴일수당', 'i_hol'], ['기타 수당', 'i_etc'], ['식대', 'i_meal'], ['자가운전보조금', 'i_car'], ['보육수당', 'i_child']];
-      var h = '<table class="rt">', tm = 0, tp = 0;
-      items.forEach(function (it) {
-        var a = o[it[1]] || 0; if (!a) return;
-        var v = Math.floor(a * p.ratio + 1e-7); tm += a; tp += v;
-        h += row(it[0], won(v), won(a) + ' × ' + p.num + '/' + p.den);
-      });
-      h += row('합계', won(tp), '월 ' + won(tm), 'tot') + '</table>';
-      frame(pane, '일할계산 결과', o.s + ' ~ ' + o.e + ' · ' + p.label,
-        big('이번 달 지급액(세전)', won(tp)) + '<p class="muted" style="font-size:.9rem">근무 ' + p.num + (o.method === 'weekday' ? '일(평일)' : '일') + ' ÷ ' + p.den + '일 = ' + (p.ratio * 100).toFixed(2) + '%</p>' + h);
+      var rows = [], tm = 0, tp = 0;
+      items.forEach(function (it) { var a = o[it[1]] || 0; if (!a) return; var v = Math.floor(a * p.ratio + 1e-7); tm += a; tp += v; rows.push({ c: [it[0], won(a), won(v)] }); });
+      rows.push({ c: ['합계', won(tm), won(tp)], cls: 'tot' });
+      show(pane, { title: '일할계산 결과', cond: o.s + ' ~ ' + o.e + ' · ' + p.label,
+        sum: [S('근무', p.num + ' / ' + p.den, o.method === 'weekday' ? '일(평일)' : '일'), S('비율', (p.ratio * 100).toFixed(2), '%'), S('이번 달 지급액(세전)', won(tp), '원', true)],
+        blocks: [{ t: 'table', head: ['항목', '월 금액', '일할 금액'], num: [1, 2], rows: rows }],
+        notes: [['원 단위 미만은 버렸어요.'], ['연장·휴일수당처럼 실제 근무시간으로 계산하는 수당은 일할하지 않고 실제 시간으로 따로 계산하는 경우가 많아요.'], [ROUNDNOTE]] });
     },
-    wage: function (pane, o) {
-      var hours = C.monthlyHours(o.weekH || 40);
-      var mh = $('.mh', pane); if (mh) mh.textContent = '월 소정근로시간 ' + hours + '시간(주휴 포함)';
-      var ordM = (o.base || 0) + (o.fixed || 0);
-      if (ordM <= 0) return errBox(pane, '통상·평균임금 계산 결과', '기본급을 입력해주세요.');
-      var a = C.averageWage({ lastDay: o.last, monthly: o.monthly, total3: o.total3, bonus: o.bonus, leavePay: o.leaveP, ordinaryMonthly: ordM, hours: hours, dayHours: o.dayH || 8, round: o.round });
-      var h = '<div class="bigs">' + big('통상시급', wonD(a.ordHour)) + big('1일 통상임금', wonD(a.ordDay)) + '</div>';
-      h += '<div class="calc">통상시급 = ' + won(ordM) + ' ÷ ' + hours + '시간 = ' + wonD(a.ordHour) + '원\n1일 통상임금 = ' + wonD(a.ordHour) + ' × ' + (o.dayH || 8) + '시간 = ' + wonD(a.ordDay) + '원</div>';
-      if (a.error) { h += '<p class="muted">평균임금은 마지막 근무일을 넣으면 계산돼요.</p>'; }
-      else {
-        var p = a.period;
-        h += '<div class="bigs">' + big('1일 평균임금', wonD(a.avg)) + big('퇴직금 등에 쓸 금액', wonD(a.applied)) + '</div>';
-        h += '<div class="calc">기간 = ' + C.ymd(p.start) + ' ~ ' + C.ymd(p.end) + ' (' + p.days + '일)\n' +
-          '3개월 임금 = ' + won(a.wages) + '원\n' + (a.add ? '상여·연차 3/12 = ' + won(a.add) + '원\n' : '') +
-          '평균임금 = ' + won(a.wages + a.add) + ' ÷ ' + p.days + ' = ' + wonD(a.avg) + '원</div>';
-        h += a.usedOrdinary ? '<p class="warnline">평균임금이 통상임금보다 적어서, 1일 통상임금(' + wonD(a.ordDay) + '원)을 평균임금으로 써요.</p>' : '';
-      }
-      frame(pane, '통상·평균임금 계산 결과', '월 통상임금 ' + won(ordM) + '원 · 주 ' + (o.weekH || 40) + '시간', h);
-    },
-    sev: function (pane, o) {
-      var ord = o.ord > 0 ? o.ord : o.monthly;
-      var s = C.severance({ join: o.join, lastDay: o.last, excludeDays: o.excl | 0, monthly: o.monthly, total3: o.total3, bonus: o.bonus, leavePay: o.leaveP, ordinaryMonthly: ord, hours: 209, dayHours: 8, round: o.round });
-      if (s.error) return errBox(pane, '퇴직금 계산 결과', s.error);
-      var a = s.aw, t = s.rt, p = a.period;
-      var h = '';
-      if (s.under1y) h += '<p class="warnline">재직기간이 1년 미만이라 퇴직금 지급 대상이 아닐 수 있어요.</p>';
-      h += '<div class="bigs">' + big('퇴직금(세전)', won(s.pay)) + big('실지급액', won(s.net)) + '</div>';
-      h += '<table class="rt">' + cap('퇴직금 계산') +
-        row('재직일수', won(s.days) + '일', o.excl ? '제외 ' + o.excl + '일 반영' : '') +
-        row('평균임금 기간', p.days + '일', C.ymd(p.start) + ' ~ ' + C.ymd(p.end)) +
-        row('3개월 임금총액', won(a.wages)) +
-        (a.add ? row('상여·연차수당 3/12', won(a.add)) : '') +
-        row('1일 평균임금', wonD(a.avg)) +
-        row('1일 통상임금', wonD(a.ordDay), won(ord) + ' ÷ 209 × 8') +
-        row('적용 금액', wonD(a.applied), a.usedOrdinary ? '통상임금이 더 커서 통상임금 적용' : '평균임금 적용', 'tot') +
-        row('퇴직금', won(s.pay), wonD(a.applied) + ' × ' + won(s.days) + ' × 30 ÷ 365', 'tot') +
-        cap('퇴직소득세') +
-        row('근속연수', t.years + '년', '1년 미만 끝수는 1년') +
-        row('근속연수공제', won(t.serviceDed)) +
-        row('환산급여', won(t.conv), '(퇴직금 − 근속연수공제) × 12 ÷ 근속연수') +
-        row('환산급여공제', won(t.convDed)) +
-        row('과세표준', won(t.base)) +
-        row('환산산출세액', won(t.convTax)) +
-        row('퇴직소득세', won(t.tax), '환산산출세액 × 근속연수 ÷ 12') +
-        row('지방소득세', won(t.local), '소득세의 10%') +
-        row('세금 합계', won(t.tax + t.local), '', 'tot') +
-        row('실지급액', won(s.net), '', 'tot') + '</table>';
-      frame(pane, '퇴직금 계산 결과', o.join + ' 입사 ~ ' + o.last + ' 퇴사 · 월 임금 ' + won(o.total3 > 0 ? o.total3 / 3 : o.monthly) + '원', h +
-        '<p class="muted" style="font-size:.85rem">퇴직금에서 건강보험·고용보험 정산분은 빼지 않았어요. 퇴사 달 급여에서 따로 정산해요.</p>');
-    },
+
     ot: function (pane, o) {
-      var hourlyAuto = o.ord > 0 ? C.unit(o.ord / (o.hours || 209), o.round) : 0;
-      var hh = $('.hh', pane); if (hh) hh.textContent = hourlyAuto ? '통상시급 ' + wonD(hourlyAuto) + '원으로 계산' : '';
-      var hourly = o.hourly > 0 ? o.hourly : hourlyAuto;
-      if (!hourly) return errBox(pane, '수당 계산 결과', '통상시급이나 월 통상임금을 입력해주세요.');
-      var hrs = { ot: o.h_ot, otn: o.h_otn, n: o.h_n, h8: o.h_h8, h8n: o.h_h8n, ho: o.h_ho, hon: o.h_hon };
-      var r = C.overtime(hourly, hrs, o.five);
-      var h = big('수당 합계', won(r.total)) + '<table class="rt">';
-      r.rows.forEach(function (x) { if (x.hours) h += row(x.name, won(x.amount), x.hours + '시간 × ' + Math.round(x.rate * 100) + '%'); });
-      h += row('합계', won(r.total), '', 'tot') + '</table>';
-      if (!o.five) h += '<p class="warnline">5인 미만 사업장이라 가산 없이 100%로 계산했어요. 소정근로 중 야간근로는 추가 지급이 없어요.</p>';
-      frame(pane, '연장·야간·휴일수당 계산 결과', '통상시급 ' + wonD(hourly) + '원 · ' + (o.five ? '5인 이상' : '5인 미만'), h);
+      var auto = o.ord > 0 ? C.unit(o.ord / (o.hours || 209), o.round) : 0;
+      var hh = $('.hh', pane); if (hh) hh.textContent = auto ? '통상시급 ' + wonD(auto) + '원' : '';
+      var hourly = o.hourly > 0 ? o.hourly : auto;
+      if (!hourly) return err(pane, '수당 계산 결과', '통상시급이나 월 통상임금을 입력해주세요.');
+      var r = C.overtime(hourly, { ot: o.h_ot, otn: o.h_otn, n: o.h_n, h8: o.h_h8, h8n: o.h_h8n, ho: o.h_ho, hon: o.h_hon }, o.five);
+      var rows = r.rows.filter(function (x) { return x.hours; }).map(function (x) { return { c: [x.name, wonD(x.hours) + '시간', Math.round(x.rate * 100) + '%', won(x.amount)] }; });
+      rows.push({ c: ['합계', '', '', won(r.total)], cls: 'tot' });
+      var notes = [];
+      if (!o.five) notes.push(['5인 미만 사업장이라 가산 없이 100%로 계산했어요. 소정근로 중 야간근로는 추가 지급이 없어요.', 'w']);
+      notes.push([ROUNDNOTE]);
+      show(pane, { title: '연장·야간·휴일수당 계산 결과', cond: (o.five ? '5인 이상' : '5인 미만') + ' 사업장',
+        sum: [S('통상시급', wonD(hourly)), S('수당 합계', won(r.total), '원', true)],
+        blocks: [{ t: 'table', head: ['구분', '시간', '지급률', '금액'], num: [1, 2, 3], rows: rows }], notes: notes });
     },
+
     min: function (pane, o) {
       var hours = C.monthlyHours(o.weekH || 40);
       var mh = $('.mh', pane); if (mh) mh.textContent = '월 소정근로시간 ' + hours + '시간(주휴 포함)';
       setLabel(pane, 'minAmount', o.mode === 'hour' ? '시급' : '월 급여(최저임금에 들어가는 임금)');
       var mw = R.minWage[o.year], minMonth = mw * hours;
-      if (o.amount <= 0) return errBox(pane, '최저임금 확인 결과', '금액을 입력해주세요.');
-      var hourly = o.mode === 'hour' ? o.amount : o.amount / hours;
-      var ok = hourly + 1e-9 >= mw;
-      var h = '<div class="bigs">' + big('환산 시급', wonD(hourly)) + big(o.year + '년 최저 월급(' + hours + '시간)', won(minMonth)) + '</div>' +
-        (ok ? '<p class="okline">최저임금(' + won(mw) + '원) 이상이에요.</p>' : '<p class="warnline">최저임금(' + won(mw) + '원)보다 시급이 ' + wonD(mw - hourly) + '원 적어요. 월 ' + won(Math.ceil((mw - hourly) * hours)) + '원 이상 올려야 해요.</p>');
-      frame(pane, '최저임금 확인 결과', o.year + '년 · 주 ' + (o.weekH || 40) + '시간 · ' + (o.mode === 'hour' ? '시급 ' : '월 ') + won(o.amount) + '원', h);
+      if (o.amount <= 0) return err(pane, '최저임금 확인 결과', '금액을 입력해주세요.');
+      var hourly = o.mode === 'hour' ? o.amount : o.amount / hours, ok = hourly + 1e-9 >= mw;
+      show(pane, { title: '최저임금 확인 결과', cond: o.year + '년 · 주 ' + (o.weekH || 40) + '시간 · ' + (o.mode === 'hour' ? '시급 ' : '월 ') + won(o.amount) + '원',
+        sum: [S('환산 시급', wonD(hourly), '원', true), S(o.year + '년 최저시급', won(mw)), S('최저 월급(' + hours + '시간)', won(minMonth))],
+        blocks: [{ t: 'text', cls: ok ? 'ok' : 'w', text: ok ? '최저임금(' + won(mw) + '원) 이상이에요.' : '최저임금(' + won(mw) + '원)보다 시급이 ' + wonD(mw - hourly) + '원 적어요. 월 ' + won(Math.ceil((mw - hourly) * hours)) + '원 이상 올려야 해요.' }],
+        notes: [[ROUNDNOTE]] });
     }
   };
+
+  /* ---------- 일용직: 근무일 고르기 ---------- */
+  function dayPicker(pane, o) {
+    var wrap = $('.dayswrap', pane), daysIn = $('[data-k="days"]', pane), hint = $('.dayhint', pane);
+    var a = C.D(o.ws), b = C.D(o.we);
+    if (!a || !b || b < a || C.daysBetween(a, b) > 62) {
+      wrap.innerHTML = ''; daysIn.readOnly = false;
+      hint.textContent = a && b && b >= a ? '기간이 62일을 넘어서 근무일수를 직접 넣어주세요.' : '근무 시작일·종료일을 넣으면 날짜를 눌러 쉰 날을 뺄 수 있어요.';
+      return null;
+    }
+    var off = (o.off || '').split(',').filter(Boolean), list = [], h = WD.map(function (w) { return '<span class="wd">' + w + '</span>'; }).join('');
+    for (var i = 0; i < a.getUTCDay(); i++) h += '<span></span>';
+    for (var d = a; d <= b; d = new Date(d.getTime() + 864e5)) {
+      var key = C.ymd(d), on = off.indexOf(key) < 0;
+      if (on) list.push(d);
+      h += '<button type="button" data-day="' + key + '" aria-pressed="' + on + '">' + d.getUTCDate() + '<small>' + (d.getUTCMonth() + 1) + '월</small></button>';
+    }
+    wrap.innerHTML = '<div class="days">' + h + '</div>';
+    daysIn.readOnly = true; hint.textContent = '색이 칠해진 날이 근무일이에요. 쉰 날은 눌러서 빼주세요.';
+    return list;
+  }
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-day]'); if (!btn) return;
+    var pane = btn.closest('.pane'), offEl = $('[data-k="off"]', pane), off = offEl.value.split(',').filter(Boolean), k = btn.getAttribute('data-day'), i = off.indexOf(k);
+    if (i >= 0) off.splice(i, 1); else off.push(k);
+    offEl.value = off.join(','); run(pane);
+  });
+
+  /* ---------- 평균임금: 달별 입력 표 ---------- */
+  var segKey = '';
+  function buildSegs(pane, o) {
+    var p = C.avgSegments(o.last); var wrap = $('.segwrap', pane);
+    if (!p || !C.D(o.join) || C.D(o.join) > C.D(o.last)) { wrap.innerHTML = ''; segKey = ''; return null; }
+    var key = p.segs.map(function (s) { return C.ymd(s.start) + s.days; }).join('|');
+    if (key !== segKey) {
+      var old = {}; $$('[data-k^="s"]', wrap).forEach(function (el) { old[el.getAttribute('data-k')] = el.value; });
+      var h = '<table class="segin"><thead><tr><th>기간</th><th>기본급</th><th>기타수당</th></tr></thead><tbody>';
+      p.segs.forEach(function (s, i) {
+        h += '<tr><td>' + md(s.start) + ' ~ ' + md(s.end) + '<small>' + s.days + '일' + (s.full ? '' : ' · 일부') + '</small></td>' +
+          '<td><input type="text" inputmode="numeric" class="money" data-k="s' + i + 'b" value="' + esc(old['s' + i + 'b'] || '') + '"></td>' +
+          '<td><input type="text" inputmode="numeric" class="money" data-k="s' + i + 'o" value="' + esc(old['s' + i + 'o'] || '') + '"></td></tr>';
+      });
+      wrap.innerHTML = h + '</tbody></table>';
+      var empty = !$$('[data-k^="s"]', wrap).some(function (el) { return el.value; });
+      if (!segKey && empty || key !== segKey && empty) fillSegs(pane, p, o);
+      segKey = key;
+      $$('input.money', wrap).forEach(bindMoney);
+    }
+    return p;
+  }
+  function fillSegs(pane, p, o) {
+    p = p || C.avgSegments(o.last); if (!p) return;
+    p.segs.forEach(function (s, i) {
+      var r = s.days / s.monthDays;
+      setK(pane, 's' + i + 'b', o.qB ? won(Math.floor(o.qB * r + 1e-7)) : '');
+      setK(pane, 's' + i + 'o', o.qO ? won(Math.floor(o.qO * r + 1e-7)) : '');
+    });
+  }
 
   /* ---------- 요율표 ---------- */
   function ratesHtml() {
     var ex = R.ei.extra, h = '';
-    h += '<h3 style="margin:8px 0">4대보험</h3><div class="tw"><table class="t"><thead><tr><th>구분</th><th class="n">근로자</th><th class="n">회사</th><th class="n">합계</th><th>기준</th></tr></thead><tbody>' +
-      '<tr><td>국민연금</td><td class="n">4.75%</td><td class="n">4.75%</td><td class="n">9.5%</td><td>기준소득월액 ' + won(R.np.min) + '원 ~ ' + won(R.np.max) + '원(' + R.np.period + ')</td></tr>' +
+    h += '<div class="blk"><h4>4대보험</h4><div class="tw"><table class="t"><thead><tr><th>구분</th><th class="n">근로자</th><th class="n">회사</th><th class="n">합계</th><th>기준</th></tr></thead><tbody>' +
+      '<tr><td>국민연금</td><td class="n">4.75%</td><td class="n">4.75%</td><td class="n">9.5%</td><td>기준소득월액 ' + won(R.np.min) + '원 ~ ' + won(R.np.max) + '원<small>' + R.np.period + '</small></td></tr>' +
       '<tr><td>건강보험</td><td class="n">3.595%</td><td class="n">3.595%</td><td class="n">7.19%</td><td>근로자 부담 월 상한 ' + won(R.hi.capEach) + '원</td></tr>' +
-      '<tr><td>장기요양보험</td><td class="n" colspan="3" style="text-align:center">건강보험료의 13.14% (소득 대비 0.9448%)</td><td>근로자·회사 반씩</td></tr>' +
+      '<tr><td>장기요양보험</td><td class="n" colspan="3" style="text-align:center">건강보험료의 13.14%(소득 대비 0.9448%)</td><td>근로자·회사 반씩</td></tr>' +
       '<tr><td>고용보험(실업급여)</td><td class="n">0.9%</td><td class="n">0.9%</td><td class="n">1.8%</td><td></td></tr>' +
       '<tr><td>고용보험(고용안정·직업능력개발)</td><td class="n">—</td><td class="n">0.25~0.85%</td><td class="n"></td><td>회사 규모별(아래 표)</td></tr>' +
-      '<tr><td>산재보험</td><td class="n">—</td><td class="n">업종별</td><td class="n"></td><td>업종 요율 + 출퇴근재해 0.6‰</td></tr>' +
-      '</tbody></table></div>';
-    h += '<h3 style="margin:22px 0 8px">고용보험 회사 추가 부담(고용안정·직업능력개발)</h3><div class="tw narrow"><table class="t"><thead><tr><th>상시 근로자 수</th><th class="n">요율</th></tr></thead><tbody>' +
+      '<tr><td>산재보험</td><td class="n">—</td><td class="n">업종별</td><td class="n"></td><td>업종 요율 + 출퇴근재해 0.6‰</td></tr></tbody></table></div></div>';
+    h += '<div class="blk"><h4>고용보험 회사 추가 부담(고용안정·직업능력개발)</h4><div class="tw"><table class="t"><thead><tr><th>상시 근로자 수</th><th class="n">요율</th></tr></thead><tbody>' +
       '<tr><td>150인 미만</td><td class="n">' + (ex.s150 * 100) + '%</td></tr><tr><td>150인 이상 우선지원대상기업</td><td class="n">' + (ex.p150 * 100) + '%</td></tr>' +
-      '<tr><td>150인 이상 1,000인 미만(우선지원대상기업 아님)</td><td class="n">' + (ex.u1000 * 100) + '%</td></tr><tr><td>1,000인 이상·국가·지방자치단체</td><td class="n">' + (ex.o1000 * 100) + '%</td></tr></tbody></table></div>';
-    h += '<h3 style="margin:22px 0 8px">2026년 사업종류별 산재보험료율</h3><p class="muted" style="font-size:.9rem;margin-bottom:8px">단위 ‰(천분율). 1,000원당 내는 금액이에요. 예: 8‰이면 월급 300만원에 24,000원. 여기에 출퇴근재해 요율 0.6‰을 모든 업종에 더해요. 회사 전액 부담이에요.</p>' +
-      '<div class="tw narrow"><table class="t"><thead><tr><th>사업 종류</th><th class="n">요율</th></tr></thead><tbody>';
+      '<tr><td>150인 이상 1,000인 미만(우선지원대상기업 아님)</td><td class="n">' + (ex.u1000 * 100) + '%</td></tr><tr><td>1,000인 이상·국가·지방자치단체</td><td class="n">' + (ex.o1000 * 100) + '%</td></tr></tbody></table></div></div>';
+    h += '<div class="blk"><h4>2026년 사업종류별 산재보험료율</h4><p class="muted" style="font-size:.88rem">단위 ‰(천분율), 1,000원당 내는 금액이에요. 예: 8‰이면 월급 300만원에 24,000원. 모든 업종에 출퇴근재해 요율 0.6‰을 더하고, 회사가 전액 부담해요.</p><div class="tw"><table class="t"><thead><tr><th>사업 종류</th><th class="n">요율</th></tr></thead><tbody>';
     C.INDUSTRY.forEach(function (g) {
       if (g[1].length === 1 && g[1][0][0] === g[0]) h += '<tr class="grp"><td>' + esc(g[0]) + '</td><td class="n">' + g[1][0][1] + '‰</td></tr>';
-      else { h += '<tr class="grp"><td colspan="2">' + esc(g[0]) + '</td></tr>'; g[1].forEach(function (it) { h += '<tr><td style="padding-left:20px">' + esc(it[0]) + '</td><td class="n">' + it[1] + '‰</td></tr>'; }); }
+      else { h += '<tr class="grp"><td colspan="2">' + esc(g[0]) + '</td></tr>'; g[1].forEach(function (it) { h += '<tr><td style="padding-left:22px">' + esc(it[0]) + '</td><td class="n">' + it[1] + '‰</td></tr>'; }); }
     });
-    h += '</tbody></table></div><p class="muted" style="font-size:.85rem;margin-top:8px">우리 회사가 어느 사업 종류에 해당하는지는 근로복지공단이 정한 사업종류 예시표로 판단해요. 사업장 가입 시 받은 산재보험 요율을 확인해주세요.</p>';
-    h += '<h3 style="margin:22px 0 8px">근로소득 비과세 한도(월)</h3><div class="tw narrow"><table class="t"><tbody>' +
-      '<tr><td>식대(식사를 따로 제공받지 않는 경우)</td><td class="n">20만원</td></tr>' +
-      '<tr><td>자가운전보조금(본인 차량으로 업무 수행, 실제 여비 대신 받는 경우)</td><td class="n">20만원</td></tr>' +
-      '<tr><td>출산·보육수당(6세 이하 자녀)</td><td class="n">자녀 1명당 20만원</td></tr></tbody></table></div>';
-    h += '<details class="law" style="margin-top:14px"><summary>근거</summary><p><b>보건복지부고시 제2026-31호</b> 국민연금 기준소득월액 하한액과 상한액 · <b>고용노동부고시 제2025-91호</b> 2026년도 사업종류별 산재보험료율 · 2026년 건강보험료율 7.19%, 장기요양보험료율 건강보험료의 13.14% · <b>소득세법 제12조제3호러목</b> 식대 · <b>제12조제3호머목</b> 출산·보육수당 · <b>소득세법 시행령 제12조제3호</b> 자가운전보조금</p></details>';
+    h += '</tbody></table></div><p class="muted" style="font-size:.84rem">우리 회사가 어느 사업 종류인지는 근로복지공단의 사업종류 예시표로 정해져요. 사업장 가입 때 받은 산재보험 요율을 확인해주세요.</p></div>';
+    h += '<div class="blk"><h4>근로소득 비과세 한도(월)</h4><div class="tw"><table class="t"><tbody>' +
+      '<tr><td>식대(식사를 따로 제공받지 않는 경우)</td><td class="n">20만원</td></tr><tr><td>자가운전보조금(본인 차량으로 업무 수행, 실제 여비 대신 받는 경우)</td><td class="n">20만원</td></tr><tr><td>출산·보육수당(6세 이하 자녀)</td><td class="n">자녀 1명당 20만원</td></tr></tbody></table></div></div>';
+    h += '<details class="law"><summary>근거</summary><p><b>보건복지부고시 제2026-31호</b> 국민연금 기준소득월액 하한액과 상한액 · <b>고용노동부고시 제2025-91호</b> 2026년도 사업종류별 산재보험료율 · 2026년 건강보험료율 7.19%, 장기요양보험료율 건강보험료의 13.14% · <b>소득세법 제12조제3호러목</b> 식대 · <b>제12조제3호머목</b> 출산·보육수당 · <b>소득세법 시행령 제12조제3호</b> 자가운전보조금</p></details>';
     return h;
   }
   $('#ratesOut').innerHTML = ratesHtml();
 
-  /* ---------- 탭 ---------- */
-  var tabs = $$('.tabs button');
-  function activate(id, focusTab) {
-    if (!document.getElementById(id) || !CALC[id] && id !== 'rates') id = 'pay';
-    tabs.forEach(function (b) { var on = b.getAttribute('data-tab') === id; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; if (on) { var c = b.parentNode; c.scrollLeft = b.offsetLeft - c.clientWidth / 2 + b.offsetWidth / 2; if (focusTab) b.focus(); } });
+  /* ---------- 메뉴 ---------- */
+  var links = $$('.side a[data-tab]'), side = $('#side'), picker = $('.picker');
+  var ALIAS = { rev: ['pay', 'mode=net'], wage: ['ord', ''] };
+  function activate(id) {
+    if (!document.getElementById(id) || !$('.pane#' + id)) id = 'pay';
+    links.forEach(function (a) { if (a.getAttribute('data-tab') === id) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     $$('.pane').forEach(function (p) { p.hidden = p.id !== id; });
     var pane = document.getElementById(id);
-    document.title = (pane.getAttribute('data-title') || '급여·노무 계산기') + ' · 급여·노무 계산기';
+    var name = pane.getAttribute('data-title') || '급여·노무 계산기';
+    document.title = name + ' · 급여·노무 계산기';
+    $('.cur', picker).textContent = name;
+    side.classList.remove('open'); picker.setAttribute('aria-expanded', 'false');
     run(pane);
   }
-  tabs.forEach(function (b) {
-    b.setAttribute('aria-controls', b.getAttribute('data-tab'));
-    b.addEventListener('click', function () { activate(b.getAttribute('data-tab')); history.replaceState(null, '', '#' + b.getAttribute('data-tab')); var nav = $('.tabs'); if (window.scrollY > nav.offsetTop) window.scrollTo({ top: nav.offsetTop }); });
-    b.addEventListener('keydown', function (e) {
-      var i = tabs.indexOf(b), n = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : -1;
-      if (n >= 0 && n < tabs.length) { e.preventDefault(); tabs[n].click(); tabs[n].focus(); }
+  links.forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault(); var id = a.getAttribute('data-tab');
+      history.replaceState(null, '', '#' + id); activate(id);
+      var top = $('.layout').getBoundingClientRect().top + scrollY - 8; if (scrollY > top) scrollTo({ top: top });
     });
   });
+  picker.addEventListener('click', function () { var o = !side.classList.contains('open'); side.classList.toggle('open', o); picker.setAttribute('aria-expanded', o); });
   document.addEventListener('click', function (e) {
-    var g = e.target.closest('[data-goto]'); if (g) { e.preventDefault(); activate(g.getAttribute('data-goto')); history.replaceState(null, '', '#' + g.getAttribute('data-goto')); window.scrollTo({ top: $('.tabs').offsetTop }); }
+    var g = e.target.closest('[data-goto]'); if (!g) return;
+    e.preventDefault(); history.replaceState(null, '', '#' + g.getAttribute('data-goto')); activate(g.getAttribute('data-goto'));
+    scrollTo({ top: $('.layout').getBoundingClientRect().top + scrollY - 8 });
   });
 
   /* ---------- 실행 ---------- */
   function run(pane) { if (CALC[pane.id]) { hints(pane); CALC[pane.id](pane, read(pane)); } }
+  function bindMoney(el) {
+    el.addEventListener('blur', function () { var n = num(el.value); el.value = n ? won(n) : ''; });
+    if (el.value) el.value = won(num(el.value));
+  }
   $$('.pane').forEach(function (pane) {
     pane.addEventListener('input', function () { run(pane); });
     pane.addEventListener('change', function () { run(pane); });
-    $$('input.money', pane).forEach(function (el) {
-      el.addEventListener('blur', function () { var n = num(el.value); el.value = n ? won(n) : ''; });
-      if (el.value) el.value = won(num(el.value));
-    });
+    $$('input.money', pane).forEach(bindMoney);
   });
 
-  /* ---------- 공유: 링크·이미지·인쇄 ---------- */
+  /* ---------- 공유 ---------- */
   var toastT;
-  function toast(msg) { var t = $('.toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('on'); }, 2200); }
+  function toast(msg) { var t = $('.toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('on'); }, 2600); }
   function stateUrl(pane) {
     var q = [];
     $$('[data-k]', pane).forEach(function (el) {
@@ -387,56 +608,51 @@
       });
     });
   }
-  function copy(text) {
+  function copyText(text) {
     if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
     return new Promise(function (ok) { var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); ok(); });
   }
-  var h2cLoading;
-  function loadH2C() {
-    if (window.html2canvas) return Promise.resolve();
-    if (h2cLoading) return h2cLoading;
-    h2cLoading = new Promise(function (ok, no) {
-      var s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-      s.onload = ok; s.onerror = function () { h2cLoading = null; no(); };
-      document.head.appendChild(s);
-    });
-    return h2cLoading;
+
+  // 이미지 미리보기 창
+  var dlg = $('dialog.imgdlg'), cur = { blob: null, url: '', name: '' };
+  function openImage(pane) {
+    var doc = DOCS[pane.id]; if (!doc) return toast('먼저 금액을 입력해주세요.');
+    var cv; try { cv = docImage(doc); } catch (e) { return toast('이미지를 만들지 못했어요. 화면을 캡처해서 보내주세요.'); }
+    cur.name = doc.title.replace(/\s+/g, '') + '.png';
+    if (cur.url) URL.revokeObjectURL(cur.url);
+    cv.toBlob(function (blob) {
+      cur.blob = blob; cur.url = URL.createObjectURL(blob);
+      $('img', dlg).src = cur.url;
+      var file = new File([blob], cur.name, { type: 'image/png' });
+      $('[data-dlg="share"]', dlg).hidden = !(navigator.canShare && navigator.canShare({ files: [file] }));
+      $('[data-dlg="copy"]', dlg).hidden = !(navigator.clipboard && window.ClipboardItem && window.isSecureContext);
+      if (dlg.showModal) dlg.showModal(); else window.open(cur.url, '_blank');
+    }, 'image/png');
   }
-  function saveImage(pane) {
-    var el = $('[data-out]', pane);
-    toast('이미지를 만드는 중이에요…');
-    loadH2C().then(function () {
-      var bg = getComputedStyle(document.body).backgroundColor;
-      el.style.padding = '18px 16px 10px';
-      return window.html2canvas(el, { backgroundColor: bg, scale: 2, useCORS: true }).finally(function () { el.style.padding = ''; });
-    }).then(function (canvas) {
-      canvas.toBlob(function (blob) {
-        var name = (pane.getAttribute('data-title') || '계산 결과') + '.png';
-        var file = new File([blob], name, { type: 'image/png' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          navigator.share({ files: [file], title: name }).catch(function () {});
-        } else {
-          var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
-          setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-          toast('이미지를 저장했어요. 카카오톡에서 사진으로 보내주세요.');
-        }
-      }, 'image/png');
-    }).catch(function () { toast('이미지를 만들지 못했어요. 화면을 캡처해서 보내주세요.'); });
-  }
+  dlg.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-dlg]'); if (e.target === dlg) return dlg.close(); if (!b) return;
+    var act = b.getAttribute('data-dlg');
+    if (act === 'close') dlg.close();
+    else if (act === 'copy') navigator.clipboard.write([new ClipboardItem({ 'image/png': cur.blob })]).then(function () { toast('이미지를 복사했어요. 카카오톡 채팅창에 붙여넣기(Ctrl+V) 해주세요.'); }, function () { toast('복사가 안 되면 이미지 저장을 눌러주세요.'); });
+    else if (act === 'save') { var a = document.createElement('a'); a.href = cur.url; a.download = cur.name; document.body.appendChild(a); a.click(); a.remove(); toast('이미지를 저장했어요.'); }
+    else if (act === 'share') navigator.share({ files: [new File([cur.blob], cur.name, { type: 'image/png' })], title: cur.name }).catch(function () {});
+  });
+
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-act]'); if (!b) return;
     var pane = b.closest('.pane'), act = b.getAttribute('data-act');
-    if (act === 'link') copy(stateUrl(pane)).then(function () { toast('이 조건이 담긴 링크를 복사했어요.'); });
+    if (act === 'link') copyText(stateUrl(pane)).then(function () { toast('이 조건이 담긴 링크를 복사했어요.'); });
     else if (act === 'print') window.print();
-    else if (act === 'img') saveImage(pane);
+    else if (act === 'img') openImage(pane);
+    else if (act === 'fill') { fillSegs(pane, null, read(pane)); $$('.segwrap input.money', pane).forEach(function (el) { if (el.value) el.value = won(num(el.value)); }); run(pane); }
   });
 
   /* ---------- 시작 ---------- */
   function fromHash() {
-    var h = location.hash.replace(/^#/, ''), parts = h.split('?'), id = parts[0] || 'pay';
+    var h = location.hash.replace(/^#/, ''), parts = h.split('?'), id = parts[0] || 'pay', qs = parts[1] || '';
+    if (ALIAS[id]) { qs = ALIAS[id][1] + (qs ? '&' + qs : ''); id = ALIAS[id][0]; }
     var pane = document.getElementById(id);
-    if (pane && parts[1]) applyState(pane, parts[1]);
+    if (pane && qs) { applyState(pane, qs); if (id === 'sev') { buildSegs(pane, read(pane)); applyState(pane, qs); } }
     activate(pane ? id : 'pay');
   }
   window.addEventListener('hashchange', fromHash);

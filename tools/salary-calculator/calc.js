@@ -99,9 +99,10 @@
     var R = RATES, ns = nontaxSplit(o.nontax);
     var gross = Math.max(0, Math.round(o.gross || 0));
     var taxable = Math.max(0, gross - ns.allowed);
-    var npBase = Math.min(R.np.max, Math.max(R.np.min, Math.floor(taxable / 1000) * 1000));
-    var np = (o.noNP || taxable <= 0) ? 0 : floor10(npBase * R.np.rate);
-    var hi = taxable <= 0 ? 0 : Math.min(R.hi.capEach, Math.max(floor10(taxable * R.hi.rate), R.hi.floorTotal / 2));
+    var npSrc = o.npBase > 0 ? o.npBase : taxable, hiSrc = o.hiBase > 0 ? o.hiBase : taxable;
+    var npBase = Math.min(R.np.max, Math.max(R.np.min, Math.floor(npSrc / 1000) * 1000));
+    var np = (o.noNP || npSrc <= 0) ? 0 : floor10(npBase * R.np.rate);
+    var hi = hiSrc <= 0 ? 0 : Math.min(R.hi.capEach, Math.max(floor10(hiSrc * R.hi.rate), R.hi.floorTotal / 2));
     var ltc = floor10(hi * R.ltc.incomeRate / R.hi.total);
     var ei = o.noEI ? 0 : floor10(taxable * R.ei.emp);
     var it = incomeTax(taxable, o.fam || 1, o.kids || 0, o.ratio || 100);
@@ -112,7 +113,7 @@
     var er = { np: np, hi: hi, ltc: ltc, ei: erEI, ind: ind };
     er.sum = np + hi + ltc + erEI + ind;
     return {
-      gross: gross, taxable: taxable, nontax: ns, npBase: npBase,
+      gross: gross, taxable: taxable, nontax: ns, npBase: npBase, hiBase: hiSrc,
       emp: { np: np, hi: hi, ltc: ltc, ei: ei, tax: it.tax, local: it.local, ins: np + hi + ltc + ei, sum: ded },
       net: gross - ded, er: er, cost: gross + er.sum, severanceMonthly: Math.floor(gross / 12)
     };
@@ -209,10 +210,21 @@
     }
     return total;
   }
-  // o: {lastDay, monthly, total3, bonus, leavePay, ordinaryMonthly, hours, dayHours, round}
+  function avgSegments(lastDay) { // 3개월을 달력의 달 단위로 나눔
+    var p = avgWagePeriod(lastDay); if (!p) return null;
+    var segs = [], d = p.start;
+    while (d <= p.end) {
+      var y = d.getUTCFullYear(), m = d.getUTCMonth(), md = dim(y, m);
+      var e = new Date(Date.UTC(y, m, md)); if (e > p.end) e = p.end;
+      segs.push({ key: y + '-' + (m + 1), start: d, end: e, days: daysBetween(d, e), monthDays: md, full: daysBetween(d, e) === md });
+      d = addDays(e, 1);
+    }
+    p.segs = segs; return p;
+  }
+  // o: {lastDay, segAmounts:[달별 임금], monthly, total3, bonus, leavePay, ordinaryMonthly, hours, dayHours, round}
   function averageWage(o) {
-    var p = avgWagePeriod(o.lastDay); if (!p) return { error: '마지막 근무일을 입력해주세요.' };
-    var wages = o.total3 > 0 ? o.total3 : wageInPeriod(o.monthly || 0, p);
+    var p = avgSegments(o.lastDay); if (!p) return { error: '마지막 근무일을 입력해주세요.' };
+    var wages = o.segAmounts ? o.segAmounts.reduce(function (a, b) { return a + (b || 0); }, 0) : (o.total3 > 0 ? o.total3 : wageInPeriod(o.monthly || 0, p));
     var add = (o.bonus || 0) * 3 / 12 + (o.leavePay || 0) * 3 / 12;
     var avg = unit((wages + add) / p.days, o.round);
     var ordHour = o.ordinaryMonthly > 0 ? unit(o.ordinaryMonthly / (o.hours || 209), o.round) : 0;
@@ -293,7 +305,7 @@
     tableTax: tableTax, incomeTax: incomeTax, kidDeduction: kidDeduction, nontaxSplit: nontaxSplit,
     salary: salary, salaryReverse: salaryReverse, daily: daily, dailyReverse: dailyReverse,
     biz: biz, bizReverse: bizReverse, prorate: prorate, monthlyHours: monthlyHours,
-    averageWage: averageWage, retirementTax: retirementTax, severance: severance,
+    averageWage: averageWage, avgSegments: avgSegments, wageInPeriod: wageInPeriod, monthsDiff: monthsDiff, retirementTax: retirementTax, severance: severance,
     leavePay: leavePay, overtime: overtime, OT: OT, D: D, ymd: ymd, daysBetween: daysBetween
   };
   root.PayCalc = api;

@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="연봉·월급의 실수령액과 4대보험 회사 부담액, 세후 금액에서 세전 금액 역산, 일용직·3.3% 사업소득, 연차수당·일할계산·통상임금·평균임금·퇴직금·연장근로수당·최저임금을 한곳에서 계산하는 급여 계산기입니다.">
+<meta name="description" content="연봉·월급의 실수령액과 4대보험 회사 부담액을 급여명세서 형태로 보여주고, 실수령액으로 세전 급여를 찾는 계산, 일용직·3.3% 사업소득, 통상임금·평균임금·퇴직금·연차수당·일할계산·연장근로수당·최저임금을 한곳에서 계산하는 급여 계산기입니다.">
 <meta property="og:title" content="급여·노무 계산기">
-<meta property="og:description" content="실수령액·4대보험 회사 부담·세후→세전 역산·퇴직금·연차수당까지 한곳에서 계산해요.">
+<meta property="og:description" content="실수령액·4대보험 회사 부담·퇴직금·연차수당까지 한곳에서 계산해요.">
 <meta property="og:type" content="website">
 <title>급여·노무 계산기</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700;900&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
-/* 가이드와 같은 종이 안내장 톤(guides/business-car 기준) + 계산기용 입력·결과 스타일 */
+/* 가이드와 같은 종이 안내장 톤. 계산기는 넓은 화면을 쓰도록 왼쪽 메뉴 + 입력/결과 2단 */
 :root{
-  --bg:#fafaf8; --ink:#1d2024; --muted:#5f646b; --line:#e2e2dc; --soft:#f0f1ec; --field:#ffffff;
+  --bg:#fafaf8; --ink:#1d2024; --muted:#5f646b; --line:#e2e2dc; --soft:#f0f1ec; --field:#ffffff; --paper:#ffffff;
   --accent:#1f5a6e; --accent-soft:#e4eef1;
   --warn:#b13b1f; --warn-soft:#fbeee9; --ok:#2e6b3c;
   --f-head:"IBM Plex Sans KR","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
@@ -22,346 +22,433 @@
   --f-num:"IBM Plex Mono",ui-monospace,Menlo,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#151719; --ink:#e8e9e6; --muted:#a3a8ad; --line:#2f3337; --soft:#1e2124; --field:#1b1e21;
+  --bg:#151719; --ink:#e8e9e6; --muted:#a3a8ad; --line:#2f3337; --soft:#1e2124; --field:#1b1e21; --paper:#1b1e21;
   --accent:#8cc3d4; --accent-soft:#1b2c32; --warn:#f0906f; --warn-soft:#33201a; --ok:#86c896; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#151719; --ink:#e8e9e6; --muted:#a3a8ad; --line:#2f3337; --soft:#1e2124; --field:#1b1e21;
+  --bg:#151719; --ink:#e8e9e6; --muted:#a3a8ad; --line:#2f3337; --soft:#1e2124; --field:#1b1e21; --paper:#1b1e21;
   --accent:#8cc3d4; --accent-soft:#1b2c32; --warn:#f0906f; --warn-soft:#33201a; --ok:#86c896; color-scheme:dark}
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.8;word-break:keep-all;overflow-wrap:break-word}
-.wrap{max-width:720px;margin:0 auto;padding-block:32px 72px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:36px}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.75;word-break:keep-all;overflow-wrap:break-word}
+.page{max-width:1320px;margin:0 auto;padding-block:28px 72px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
 h1,h2,h3{font-family:var(--f-head);text-wrap:balance;line-height:1.4;margin:0}
-h1{font-size:clamp(1.65rem,5.6vw,2.2rem);font-weight:700;letter-spacing:-.02em}
-h2{font-size:1.4rem;font-weight:700;letter-spacing:-.01em}
-h3{font-size:1.08rem;font-weight:700}
+h1{font-size:clamp(1.6rem,4vw,2.1rem);font-weight:700;letter-spacing:-.02em}
+h2{font-size:1.45rem;font-weight:700;letter-spacing:-.01em}
+h3{font-size:1rem;font-weight:700}
 p{margin:0}
-ul,ol{margin:0;padding-left:1.25em}
-li+li{margin-top:6px}
+ul,ol{margin:0;padding-left:1.2em}
+li+li{margin-top:4px}
 .muted{color:var(--muted)}
-.hero{display:flex;flex-direction:column;gap:16px}
-.tolist{font-size:.92rem;color:var(--muted);text-decoration:none;align-self:flex-start}
-.tolist:hover{color:var(--accent)}
-.eyebrow{font-size:.95rem;color:var(--accent);font-weight:700}
-.lead{font-size:1.08rem}
-.notice{font-size:.95rem;border-left:3px solid var(--ink);padding:2px 0 2px 14px}
+a{color:var(--accent)}
 
-.box{padding:16px 18px;display:flex;flex-direction:column;gap:8px;background:var(--soft);border-radius:4px;font-size:.95rem}
+/* 머리말 */
+.hero{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px 40px;align-items:start;padding-bottom:26px;border-bottom:2px solid var(--ink);margin-bottom:28px}
+.hero-l{display:flex;flex-direction:column;gap:12px}
+.hero-r{display:flex;flex-direction:column;gap:12px;padding-top:30px}
+.tolist{font-size:.9rem;color:var(--muted);text-decoration:none;align-self:flex-start}
+.tolist:hover{color:var(--accent)}
+.eyebrow{font-size:.92rem;color:var(--accent);font-weight:700}
+.lead{font-size:1.02rem}
+.notice{font-size:.92rem;border-left:3px solid var(--ink);padding:2px 0 2px 14px}
+.box{padding:14px 16px;display:flex;flex-direction:column;gap:6px;background:var(--soft);border-radius:4px;font-size:.92rem}
 .box.warn{background:var(--warn-soft)}
 .box.warn .box-t{color:var(--warn)}
 .box.info{background:var(--accent-soft)}
 .box.info .box-t{color:var(--accent)}
-.box-t{font-weight:700;font-size:1rem}
+.box-t{font-weight:700;font-size:.98rem}
 
-/* 계산기 고르기: 밑줄 탭(알약 버튼 쓰지 않음) */
-.tabs{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);margin-inline:-18px;padding-inline:18px}
-.tabs-in{position:relative;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-.tabs-in::-webkit-scrollbar{display:none}
-.tabs .grp{flex:none;align-self:center;font-size:.75rem;color:var(--muted);font-weight:700;padding:0 4px 0 10px}
-.tabs .grp:first-child{padding-left:0}
-.tabs button{flex:none;font:inherit;font-size:.95rem;font-weight:500;color:var(--muted);background:none;border:0;border-bottom:3px solid transparent;padding:12px 8px 9px;cursor:pointer;white-space:nowrap}
-.tabs button:hover{color:var(--ink)}
-.tabs button[aria-selected="true"]{color:var(--ink);font-weight:700;border-bottom-color:var(--accent)}
-.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+/* 본문: 왼쪽 메뉴 + 내용 */
+.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:40px;align-items:start}
+.side{position:sticky;top:16px;display:flex;flex-direction:column;gap:18px}
+.side .grp{font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.02em;padding:0 0 6px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.side ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column}
+.side li{margin:0}
+.side a{display:block;padding:7px 10px 7px 12px;border-left:3px solid transparent;color:var(--ink);text-decoration:none;font-size:.95rem;line-height:1.45}
+.side a small{display:block;color:var(--muted);font-size:.78rem}
+.side a:hover{background:var(--soft)}
+.side a[aria-current="page"]{border-left-color:var(--accent);background:var(--accent-soft);font-weight:700}
+.side a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.picker{display:none}
 
-.pane{display:flex;flex-direction:column;gap:22px;scroll-margin-top:68px}
+.pane{display:flex;flex-direction:column;gap:20px;min-width:0;scroll-margin-top:16px}
 .pane[hidden]{display:none}
-.pane>.lead{color:var(--muted);font-size:1rem}
+.pane-head{display:flex;flex-direction:column;gap:6px}
+.pane-head p{color:var(--muted)}
+.cols{display:grid;grid-template-columns:minmax(0,430px) minmax(0,1fr);gap:36px;align-items:start}
+.cols.wide{grid-template-columns:minmax(0,1fr)}
 
 /* 입력 */
-.form{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px}
-.form .full{grid-column:1/-1}
-.form h3{grid-column:1/-1;font-size:.95rem;color:var(--muted);padding-top:8px;border-bottom:2px solid var(--ink);padding-bottom:6px}
-.f{display:flex;flex-direction:column;gap:4px;min-width:0}
-.f>span{font-size:.9rem;font-weight:700}
-.f>small,.hint{font-size:.8rem;color:var(--muted);line-height:1.5}
-.f .in{position:relative;display:flex;align-items:center}
-input[type=text],input[type=date],input[type=number],select{font:inherit;font-size:1rem;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:4px;padding:9px 11px;width:100%;min-width:0}
-.f .in input{padding-right:40px;text-align:right;font-variant-numeric:tabular-nums}
-.f .in em{position:absolute;right:11px;font-style:normal;font-size:.88rem;color:var(--muted);pointer-events:none}
+.form{display:flex;flex-direction:column;gap:20px}
+.fs{display:flex;flex-direction:column;gap:12px}
+.fs>h3{font-size:.9rem;color:var(--muted);border-bottom:2px solid var(--ink);padding-bottom:5px}
+.fs>h3 .no{color:var(--accent);margin-right:6px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+.g2>.full{grid-column:1/-1}
+.f{display:flex;flex-direction:column;gap:3px;min-width:0}
+.f>span{font-size:.88rem;font-weight:700}
+.f>small,.hint{font-size:.78rem;color:var(--muted);line-height:1.5}
+.in{position:relative;display:flex;align-items:center}
+input[type=text],input[type=date],select{font:inherit;font-size:1rem;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:4px;padding:8px 10px;width:100%;min-width:0;height:42px}
+.in input{padding-right:38px;text-align:right;font-variant-numeric:tabular-nums}
+.in em{position:absolute;right:10px;font-style:normal;font-size:.85rem;color:var(--muted);pointer-events:none}
 input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
-.chk{display:flex;gap:8px;align-items:flex-start;font-size:.92rem;cursor:pointer}
-.chk input{width:18px;height:18px;margin:4px 0 0;accent-color:var(--accent);flex:none}
-.seg{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
-.seg label{flex:1;text-align:center;font-size:.92rem;padding:8px 6px;cursor:pointer;border-left:1px solid var(--line)}
+input[readonly]{background:var(--soft)}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;cursor:pointer;line-height:1.5}
+.chk input{width:17px;height:17px;margin:2px 0 0;accent-color:var(--accent);flex:none}
+.seg{display:flex;border:1px solid var(--ink);border-radius:4px;overflow:hidden}
+.seg label{flex:1;text-align:center;font-size:.9rem;padding:8px 6px;cursor:pointer;border-left:1px solid var(--ink);line-height:1.4;position:relative}
 .seg label:first-child{border-left:0}
 .seg input{position:absolute;opacity:0;pointer-events:none}
 .seg label:has(input:checked){background:var(--ink);color:var(--bg);font-weight:700}
-.seg label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:-2px}
-
-/* 결과: 영수증처럼 */
-.result{background:var(--bg);padding:18px 0 4px;border-top:2px solid var(--ink);display:flex;flex-direction:column;gap:14px}
-.r-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
-.r-head h3{font-size:1.05rem}
-.r-cond{font-size:.85rem;color:var(--muted)}
-.big{display:flex;flex-direction:column;gap:0}
-.big .k{font-size:.9rem;color:var(--muted);font-weight:700}
-.big .v{font-family:var(--f-head);font-size:clamp(1.8rem,7vw,2.4rem);font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.3}
-.big .v small{font-size:.5em;color:var(--ink);margin-left:4px}
-.bigs{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px 20px}
-.rt{width:100%;border-collapse:collapse;font-size:.95rem}
-.rt td{padding:7px 0;border-bottom:1px solid var(--line);vertical-align:top}
-.rt td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;padding-left:12px}
-.rt .s{font-size:.8rem;color:var(--muted);margin-left:8px;font-weight:400}
-.rt tr.sub td{color:var(--muted);font-size:.88rem}
-.rt tr.tot td{border-top:2px solid var(--ink);border-bottom:0;font-weight:700;padding-top:10px}
-.rt tr.cap td:first-child{font-weight:700;padding-top:16px;color:var(--muted);font-size:.85rem}
-.err{color:var(--warn);font-weight:700}
-.warnline{color:var(--warn);font-size:.9rem;font-weight:700}
-.okline{color:var(--ok);font-size:.9rem;font-weight:700}
-.acts{display:flex;gap:8px;flex-wrap:wrap}
-.btn{font:inherit;font-size:.9rem;font-weight:700;color:var(--ink);background:none;border:1px solid var(--ink);border-radius:4px;padding:7px 12px;cursor:pointer}
+.seg label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:-3px}
+details.adv{border-top:1px solid var(--line);padding-top:8px}
+details.adv summary{cursor:pointer;font-size:.88rem;font-weight:700;color:var(--muted)}
+details.adv[open] summary{margin-bottom:10px}
+.btn{font:inherit;font-size:.88rem;font-weight:700;color:var(--ink);background:none;border:1px solid var(--ink);border-radius:4px;padding:7px 12px;cursor:pointer;line-height:1.4}
 .btn:hover{background:var(--soft)}
 .btn.main{background:var(--ink);color:var(--bg)}
 .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:4px;font-size:.9rem;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
-.toast.on{opacity:1}
+
+/* 일용직 근무일 고르기 */
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.days .wd{font-size:.72rem;color:var(--muted);text-align:center}
+.days button{font:inherit;font-size:.82rem;border:1px solid var(--line);background:var(--field);color:var(--muted);border-radius:4px;padding:5px 0;cursor:pointer;line-height:1.3;text-decoration:line-through}
+.days button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--bg);font-weight:700;text-decoration:none}
+.days button small{display:block;font-size:.66rem;opacity:.85}
+
+/* 평균임금 3개월 표 입력 */
+table.segin{width:100%;border-collapse:collapse;font-size:.85rem}
+table.segin th{font-size:.78rem;color:var(--muted);text-align:left;font-weight:700;padding:4px 4px 6px;border-bottom:2px solid var(--ink)}
+table.segin td{padding:5px 4px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.segin td:first-child{white-space:nowrap;font-size:.82rem;line-height:1.35}
+table.segin td:first-child small{color:var(--muted);display:block}
+table.segin input{height:36px;padding:6px 8px;text-align:right;font-size:.92rem}
+
+/* 결과 */
+.result{background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--ink);border-radius:4px;padding:20px 22px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.r-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.r-head h3{font-size:1.15rem}
 .stamp{font-size:.75rem;color:var(--muted)}
-
-/* 표 */
+.r-cond{font-size:.85rem;color:var(--muted);margin-top:-10px}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.sum>div{padding:10px 12px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:2px;min-width:0}
+.sum>div:first-child{border-left:0}
+.sum .k{font-size:.78rem;color:var(--muted);font-weight:700}
+.sum .v{font-family:var(--f-head);font-size:1.15rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.3;white-space:nowrap}
+.sum .v small{font-size:.65em;font-weight:500;margin-left:2px;color:var(--muted)}
+.sum .acc{background:var(--accent-soft)}
+.sum .acc .v{color:var(--accent);font-size:1.3rem}
+.blk{display:flex;flex-direction:column;gap:6px;min-width:0}
+.blk>h4{font-family:var(--f-head);font-size:.92rem;margin:0}
+.slip{display:grid;grid-template-columns:1fr 1fr;border-top:2px solid var(--ink)}
+.slip table{width:100%;border-collapse:collapse;font-size:.92rem}
+.slip .l{border-right:1px solid var(--line)}
+.slip th{font-size:.8rem;color:var(--muted);font-weight:700;text-align:center;padding:7px 8px;border-bottom:1px solid var(--ink);background:var(--soft)}
+.slip td{padding:6px 10px;border-bottom:1px solid var(--line)}
+.slip td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.slip tr.tot td{font-weight:700;border-top:2px solid var(--ink);border-bottom:0}
+.slip tr.pad td{color:transparent}
+.slip .fin{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 12px;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink);background:var(--accent-soft)}
+.slip .fin b{font-family:var(--f-head);font-size:1rem}
+.slip .fin span{font-family:var(--f-head);font-size:1.5rem;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
 .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
-table.t{border-collapse:collapse;width:100%;font-size:.92rem;min-width:520px;border-top:2px solid var(--ink)}
-.tw.narrow table.t{min-width:0}
-table.t th,table.t td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-table.t th{font-weight:700;font-size:.85rem;color:var(--muted);white-space:nowrap}
-table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-table.t tr.grp td{font-weight:700;padding-top:14px}
+table.t{border-collapse:collapse;width:100%;font-size:.9rem;border-top:2px solid var(--ink)}
+table.t th,table.t td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.t th{font-weight:700;font-size:.78rem;color:var(--muted);white-space:nowrap;background:var(--soft)}
+table.t .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.t tr.tot td{font-weight:700;border-top:2px solid var(--ink)}
+table.t tr.grp td{font-weight:700;padding-top:12px}
 table.t tr.hl td{background:var(--accent-soft)}
+table.t td small{display:block;color:var(--muted);font-size:.75rem;line-height:1.4}
+.calc{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:.82rem;background:var(--soft);border-radius:4px;padding:10px 12px;line-height:1.9;overflow-x:auto;white-space:pre}
+.notes{list-style:none;padding:0;margin:0;font-size:.82rem;color:var(--muted);display:flex;flex-direction:column;gap:2px}
+.notes li::before{content:"· "}
+.notes li.w{color:var(--warn);font-weight:700}
+.notes li.ok{color:var(--ok);font-weight:700}
+.acts{display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:14px}
+.err{color:var(--warn);font-weight:700}
 
-details.law{font-size:.85rem;color:var(--muted)}
+details.law{font-size:.84rem;color:var(--muted)}
 details.law summary{cursor:pointer;list-style:none;display:inline-flex;gap:6px;align-items:center}
 details.law summary::-webkit-details-marker{display:none}
 details.law summary::before{content:"+";font-weight:700;width:1em;text-align:center}
 details.law[open] summary::before{content:"–"}
 details.law p{padding:6px 0 0 1.4em;line-height:1.65}
 details.law b{font-weight:500;color:var(--ink)}
-.calc{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:.85rem;background:var(--soft);border-radius:4px;padding:12px 14px;line-height:1.9;overflow-x:auto;white-space:pre}
-.foot{font-size:.88rem;color:var(--muted);border-top:1px solid var(--line);padding-top:18px;display:flex;flex-direction:column;gap:8px}
-a{color:var(--accent)}
-a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.foot{font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;margin-top:48px;display:flex;flex-direction:column;gap:6px}
 
+/* 이미지 미리보기 */
+dialog.imgdlg{border:0;border-radius:6px;padding:0;max-width:min(560px,94vw);width:100%;background:var(--bg);color:var(--ink);box-shadow:0 10px 40px rgba(0,0,0,.3)}
+dialog.imgdlg::backdrop{background:rgba(0,0,0,.45)}
+.imgdlg .in2{display:flex;flex-direction:column;gap:12px;padding:18px}
+.imgdlg .pv{max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:4px;background:#fff}
+.imgdlg .pv img{display:block;width:100%;height:auto}
+.imgdlg .tip{font-size:.82rem;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:4px;font-size:.9rem;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50;max-width:90vw;text-align:center}
+.toast.on{opacity:1}
+
+@media (max-width:1180px){ .cols{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:900px){
+  .hero{grid-template-columns:1fr}
+  .hero-r{padding-top:0}
+  .pane{scroll-margin-top:84px}
+  .layout{grid-template-columns:minmax(0,1fr);gap:20px}
+  .side{display:none;position:static;border:1px solid var(--line);border-radius:4px;padding:14px;background:var(--paper)}
+  .side.open{display:flex}
+  .picker{display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;font:inherit;font-weight:700;font-size:1rem;width:100%;padding:12px 14px;background:var(--bg);color:var(--ink);border:0;border-top:2px solid var(--ink);border-bottom:1px solid var(--line);cursor:pointer;text-align:left}
+  .picker small{font-weight:500;color:var(--muted);font-size:.8rem}
+}
 @media (max-width:560px){
-  .form{grid-template-columns:1fr}
-  .tabs{margin-inline:-18px}
+  .g2{grid-template-columns:1fr}
+  .slip{grid-template-columns:1fr}
+  .slip .l{border-right:0}
+  .slip tr.pad{display:none}
+  .result{padding:16px 14px}
 }
 @media print{
-  .tolist,.tabs,.acts,.form,.toast,.noprint{display:none!important}
-  body{background:#fff;font-size:10.5pt}
-  .wrap{max-width:none;padding:0;gap:16px}
+  .tolist,.side,.picker,.form,.acts,.toast,.hero-r,.noprint{display:none!important}
+  body{background:#fff;font-size:10pt}
+  .page{max-width:none;padding:0}
+  .layout,.cols{display:block}
+  .result{border:0;padding:0}
   details.law p{display:block}
-  .tw{overflow:visible} table.t{min-width:0}
   tr,.box{break-inside:avoid}
 }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="page">
 
 <header class="hero">
-  <a class="tolist" href="../../">← 가이드 목록</a>
-  <div class="eyebrow">사업자 대표님을 위한 · 급여 / 노무 계산기</div>
-  <h1>급여·노무 계산기</h1>
-  <p class="lead">연봉이나 월급을 넣으면 <strong>직원 실수령액</strong>과 <strong>회사가 내는 4대보험</strong>을 바로 보여드려요. 실수령액에서 세전 금액을 거꾸로 구하는 계산, 연차수당·일할계산·퇴직금 계산도 함께 할 수 있어요.</p>
-  <p class="notice"><b>신고하시기 전에 확인해주세요.</b> 이 안내는 일반적인 내용을 정리한 자료예요. 신고나 홈택스 처리를 하시기 전에, 내 상황에 맞는지 세무사무실에 공유해 확인하신 뒤 진행해주세요.</p>
-  <div class="box warn">
-    <p class="box-t">2027년 급여를 지급하기 전에 꼭 확인해주세요</p>
-    <p>이 계산기는 <b>2026년 요율</b>로 계산해요. 2027년 4대보험 요율은 아직 반영되지 않았으니, <b>2027년 1월 급여를 지급하시기 전에 꼭 변동사항을 확인하고 지급</b>해주세요.</p>
+  <div class="hero-l">
+    <a class="tolist" href="../../">← 가이드 목록</a>
+    <div class="eyebrow">사업자 대표님을 위한 · 급여 / 노무 계산기</div>
+    <h1>급여·노무 계산기</h1>
+    <p class="lead">연봉이나 월급을 넣으면 <strong>직원 실수령액</strong>과 <strong>회사가 내는 4대보험</strong>을 급여명세서처럼 보여드려요. 실수령액으로 세전 급여 찾기, 퇴직금·연차수당 계산도 함께 할 수 있어요.</p>
+    <p class="notice"><b>신고하시기 전에 확인해주세요.</b> 이 안내는 일반적인 내용을 정리한 자료예요. 신고나 홈택스 처리를 하시기 전에, 내 상황에 맞는지 세무사무실에 공유해 확인하신 뒤 진행해주세요.</p>
   </div>
-  <p class="muted" style="font-size:.88rem">입력하신 금액은 이 화면 안에서만 계산되고 어디에도 저장·전송되지 않아요.</p>
+  <div class="hero-r">
+    <div class="box warn">
+      <p class="box-t">2027년 급여를 지급하기 전에 꼭 확인해주세요</p>
+      <p>이 계산기는 <b>2026년 요율</b>로 계산해요. 2027년 4대보험 요율은 아직 반영되지 않았으니, <b>2027년 1월 급여를 지급하시기 전에 꼭 변동사항을 확인하고 지급</b>해주세요.</p>
+    </div>
+    <p class="muted" style="font-size:.85rem">입력하신 금액은 이 화면 안에서만 계산되고 어디에도 저장·전송되지 않아요. 끝전 절사로 인해 실제 금액과 단수 차이가 발생할 수 있어요.</p>
+  </div>
 </header>
 
-<nav class="tabs" aria-label="계산기 고르기">
-  <div class="tabs-in" role="tablist">
-    <span class="grp">급여</span>
-    <button role="tab" data-tab="pay">실수령액</button>
-    <button role="tab" data-tab="rev">세후→세전</button>
-    <button role="tab" data-tab="day">일용직</button>
-    <button role="tab" data-tab="biz">3.3% 사업소득</button>
-    <button role="tab" data-tab="table">연봉별 실수령표</button>
-    <span class="grp">노무</span>
-    <button role="tab" data-tab="leave">연차수당</button>
-    <button role="tab" data-tab="prorate">일할계산</button>
-    <button role="tab" data-tab="wage">통상·평균임금</button>
-    <button role="tab" data-tab="sev">퇴직금</button>
-    <button role="tab" data-tab="ot">연장·야간·휴일수당</button>
-    <button role="tab" data-tab="min">최저임금</button>
-    <span class="grp">기준표</span>
-    <button role="tab" data-tab="rates">4대보험·산재 요율</button>
+<div class="layout">
+<button class="picker" type="button" aria-expanded="false" aria-controls="side"><span><small>계산기 고르기</small><br><span class="cur">급여 계산</span></span><span aria-hidden="true">▾</span></button>
+<nav class="side" id="side" aria-label="계산기 목록">
+  <div>
+    <div class="grp">급여</div>
+    <ul>
+      <li><a href="#pay" data-tab="pay">급여 계산<small>실수령액 · 회사 부담 · 세전 급여 찾기</small></a></li>
+      <li><a href="#table" data-tab="table">연봉별 실수령표</a></li>
+      <li><a href="#day" data-tab="day">일용직 일당</a></li>
+      <li><a href="#biz" data-tab="biz">3.3% 사업소득</a></li>
+    </ul>
+  </div>
+  <div>
+    <div class="grp">노무</div>
+    <ul>
+      <li><a href="#ord" data-tab="ord">통상임금</a></li>
+      <li><a href="#sev" data-tab="sev">평균임금 · 퇴직금</a></li>
+      <li><a href="#leave" data-tab="leave">연차수당</a></li>
+      <li><a href="#prorate" data-tab="prorate">일할계산</a></li>
+      <li><a href="#ot" data-tab="ot">연장·야간·휴일수당</a></li>
+      <li><a href="#min" data-tab="min">최저임금 확인</a></li>
+    </ul>
+  </div>
+  <div>
+    <div class="grp">기준표</div>
+    <ul>
+      <li><a href="#rates" data-tab="rates">4대보험 · 산재 요율</a></li>
+    </ul>
   </div>
 </nav>
 
 <main>
 
-<!-- 1. 실수령액 -->
-<section class="pane" id="pay" role="tabpanel" data-title="급여 실수령액 계산">
-  <h2>연봉·월급 실수령액과 회사 부담액</h2>
-  <p class="lead">세전 금액을 넣으면 직원이 받는 금액과 회사가 내는 4대보험을 함께 보여드려요.</p>
-  <div class="form">
-    <div class="f full"><span>입력 기준</span>
-      <div class="seg"><label><input type="radio" name="pay-basis" data-k="basis" value="year" checked>연봉</label><label><input type="radio" name="pay-basis" data-k="basis" value="month">월급</label></div>
+<!-- 급여 계산 -->
+<section class="pane" id="pay" data-title="급여 계산">
+  <div class="pane-head"><h2>급여 계산</h2><p>세전 급여나 실수령액 중 알고 있는 금액을 넣으면, 급여명세서와 회사가 내는 4대보험을 함께 보여드려요.</p></div>
+  <div class="cols">
+    <div class="form">
+      <div class="fs"><h3>금액</h3>
+        <div class="f"><span>입력하는 금액</span>
+          <div class="seg"><label><input type="radio" name="pay-mode" data-k="mode" value="gross" checked>세전 급여<br><small>공제 전 금액</small></label><label><input type="radio" name="pay-mode" data-k="mode" value="net">실수령액<br><small>공제 후 받는 금액</small></label></div>
+        </div>
+        <div data-show="mode=gross" class="fs">
+          <div class="seg"><label><input type="radio" name="pay-basis" data-k="basis" value="month" checked>월급</label><label><input type="radio" name="pay-basis" data-k="basis" value="year">연봉</label></div>
+          <label class="f"><span data-lbl="amount">월급(세전)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="amount" value="3000000"><em>원</em></div><small class="kr"></small></label>
+          <label class="chk" data-show="basis=year"><input type="checkbox" data-k="sev13">퇴직금이 포함된 연봉이에요(13으로 나눠 월급 계산)</label>
+          <label class="chk"><input type="checkbox" data-k="inclNT" checked>위 금액에 아래 비과세 수당(식대 등)이 들어 있어요</label>
+        </div>
+        <div data-show="mode=net" class="fs">
+          <label class="f"><span>월 실수령액</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="target" value="3000000"><em>원</em></div><small class="kr"></small><small>아래 비과세 수당은 그대로 두고, 나머지 과세 급여를 찾아요.</small></label>
+        </div>
+      </div>
+      <div data-common="nontax"></div>
+      <div data-common="person"></div>
+      <div data-common="employer"></div>
+      <details class="adv"><summary>4대보험 신고 금액 직접 넣기(선택)</summary>
+        <div class="g2">
+          <label class="f"><span>국민연금 기준소득월액</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="npBase"><em>원</em></div><small>비워두면 이번 달 과세 급여로 계산</small></label>
+          <label class="f"><span>건강보험 보수월액</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="hiBase"><em>원</em></div><small>비워두면 이번 달 과세 급여로 계산</small></label>
+        </div>
+        <p class="hint" style="margin-top:6px">실제 보험료는 공단에 신고된 금액으로 매겨져요. 고지서 금액과 맞추고 싶을 때 넣어주세요.</p>
+      </details>
     </div>
-    <label class="f full"><span data-lbl="amount">연봉(세전)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="amount" value="36000000"><em>원</em></div><small class="kr"></small></label>
-    <label class="chk full" data-show="basis=year"><input type="checkbox" data-k="sev13">퇴직금이 포함된 연봉이에요(연봉을 13으로 나눠 월급 계산)</label>
-    <label class="chk full"><input type="checkbox" data-k="inclNT" checked>위 금액에 비과세 수당(식대 등)이 들어 있어요</label>
-    <div class="full" data-common="nontax"></div>
-    <div class="full" data-common="person"></div>
-    <div class="full" data-common="employer"></div>
+    <div class="result" data-out></div>
   </div>
+  <div class="box info">
+    <p class="box-t">임금명세서는 회사가 작성해서 근로자에게 각각 줘야 해요</p>
+    <p>근로자를 고용한 사업장은 <b>상시 근로자 5인 미만이어도</b> 임금을 지급할 때마다 임금 구성항목·계산방법·공제내역을 적은 <b>임금명세서를 근로자 한 사람 한 사람에게</b> 서면(이메일·문자 등 전자문서 포함)으로 줘야 해요. 위 결과는 참고용이니, 임금명세서는 회사에서 작성해 근로자에게 개별로 전달해주세요.</p>
+  </div>
+  <details class="law"><summary>법령 근거</summary><p><b>근로기준법 제48조제2항</b> 임금명세서 교부 · <b>근로기준법 시행령 별표1</b> 상시 4명 이하 사업장에도 제48조 적용 · <b>소득세법 시행령 별표2</b> 근로소득 간이세액표 · <b>소득세법 제12조제3호러목·머목</b> 식대·출산보육수당 비과세 · <b>소득세법 시행령 제12조제3호</b> 자가운전보조금 · <b>보건복지부고시 제2026-31호</b> 국민연금 기준소득월액 상·하한 · <b>고용노동부고시 제2025-91호</b> 산재보험료율</p></details>
+</section>
+
+<!-- 연봉별 실수령표 -->
+<section class="pane" id="table" data-title="연봉별 실수령표" hidden>
+  <div class="pane-head"><h2>연봉별 월 실수령액 표</h2><p>연봉 구간별로 매달 받는 금액을 한눈에 보여드려요. 퇴직금 별도 연봉을 12로 나눈 금액이에요.</p></div>
+  <div class="form"><div class="fs"><div class="g2" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+    <label class="f"><span>공제대상 가족 수(본인 포함)</span><select data-k="fam"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+    <label class="f"><span>8세~20세 자녀 수</span><select data-k="kids"><option>0</option><option>1</option><option>2</option><option>3</option></select></label>
+    <label class="f"><span>비과세 식대</span><select data-k="meal"><option value="200000" selected>월 20만원 포함</option><option value="0">없음</option></select></label>
+    <label class="f"><span>연봉 범위</span><select data-k="range"><option value="20-60">2,000만 ~ 6,000만원</option><option value="60-100">6,000만 ~ 1억원</option><option value="20-100" selected>2,000만 ~ 1억원</option></select></label>
+  </div></div></div>
   <div class="result" data-out></div>
 </section>
 
-<!-- 2. 역산 -->
-<section class="pane" id="rev" role="tabpanel" data-title="세후→세전 역산" hidden>
-  <h2>실수령액에서 세전 월급 구하기</h2>
-  <p class="lead">"손에 300만원 쥐여주려면 세전으로 얼마를 줘야 하나요?"에 답하는 계산이에요. 식대 같은 비과세 수당은 그대로 두고 나머지 과세 급여를 찾아요.</p>
-  <div class="form">
-    <label class="f"><span>원하는 월 실수령액</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="target" value="3000000"><em>원</em></div><small class="kr"></small></label>
-    <label class="f"><span>세전 금액 단위</span><select data-k="step"><option value="1">1원 단위</option><option value="10">10원 단위</option><option value="1000" selected>1,000원 단위(올림)</option><option value="10000">10,000원 단위(올림)</option></select><small>단위를 올리면 실수령액이 목표보다 조금 많아질 수 있어요.</small></label>
-    <div class="full" data-common="nontax"></div>
-    <div class="full" data-common="person"></div>
-    <div class="full" data-common="employer"></div>
-  </div>
-  <div class="result" data-out></div>
-</section>
-
-<!-- 3. 일용직 -->
-<section class="pane" id="day" role="tabpanel" data-title="일용직 급여 계산" hidden>
-  <h2>일용직 일당 계산</h2>
-  <p class="lead">일당에서 고용보험·소득세·지방소득세를 떼는 계산이에요. 실제로 손에 줄 금액에서 세전 일당을 거꾸로 구할 수도 있어요.</p>
-  <div class="form">
-    <div class="f full"><span>계산 방향</span>
-      <div class="seg"><label><input type="radio" name="day-mode" data-k="mode" value="rev" checked>지급액 → 세전 일당</label><label><input type="radio" name="day-mode" data-k="mode" value="fwd">세전 일당 → 지급액</label></div>
+<!-- 일용직 -->
+<section class="pane" id="day" data-title="일용직 일당 계산" hidden>
+  <div class="pane-head"><h2>일용직 일당 계산</h2><p>일당에서 고용보험·소득세·지방소득세를 떼는 계산이에요. 손에 줄 금액을 넣으면 세전 일당을 찾아드려요.</p></div>
+  <div class="cols">
+    <div class="form">
+      <div class="fs"><h3>금액</h3>
+        <div class="f"><span>입력하는 금액(1일 기준)</span>
+          <div class="seg"><label><input type="radio" name="day-mode" data-k="mode" value="net" checked>실지급액<br><small>공제 후 주는 일당</small></label><label><input type="radio" name="day-mode" data-k="mode" value="gross">세전 일당<br><small>공제 전 일당</small></label></div>
+        </div>
+        <label class="f"><span data-lbl="dayAmount">1일 실지급액</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="amount" value="150000"><em>원</em></div><small class="kr"></small></label>
+        <label class="chk"><input type="checkbox" data-k="o65">65세 이상(고용보험 실업급여 제외 대상)</label>
+      </div>
+      <div class="fs"><h3>근무일</h3>
+        <div class="g2">
+          <label class="f"><span>근무 시작일</span><input type="date" data-k="ws"></label>
+          <label class="f"><span>근무 종료일</span><input type="date" data-k="we"></label>
+        </div>
+        <input type="hidden" data-k="off">
+        <div class="dayswrap"></div>
+        <label class="f"><span>근무일수</span><div class="in"><input type="text" inputmode="numeric" class="int" data-k="days" value="1"><em>일</em></div><small class="dayhint">근무 시작일·종료일을 넣으면 날짜를 눌러 쉰 날을 뺄 수 있어요.</small></label>
+      </div>
     </div>
-    <label class="f"><span data-lbl="dayAmount">1일 실지급액(차인지급액)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="amount" value="150000"><em>원</em></div><small class="kr"></small></label>
-    <label class="f"><span>근무일수(이번에 지급하는 날수)</span><div class="in"><input type="text" inputmode="numeric" class="int" data-k="days" value="1"><em>일</em></div></label>
-    <label class="f"><span>근무 시작일</span><input type="date" data-k="ws"></label>
-    <label class="f"><span>근무 종료일</span><input type="date" data-k="we"></label>
-    <label class="f"><span>지급일</span><input type="date" data-k="pd"><small>소득세는 지급하는 날 기준으로 떼어요.</small></label>
-    <label class="chk" style="align-self:end"><input type="checkbox" data-k="o65">65세 이상(고용보험 실업급여 제외 대상)</label>
+    <div class="result" data-out></div>
   </div>
-  <div class="result" data-out></div>
   <div class="box warn">
     <p class="box-t">일용직 참고사항</p>
     <ul>
-      <li>일용직은 <b>근무일자와 지급일자</b>가 필요하고, 위 금액은 <b>일급으로 지급할 때</b>의 금액이에요.</li>
-      <li>한 달에 <b>8일 이상</b> 또는 <b>60시간 이상</b> 일하거나 월 <b>220만원 이상</b> 받으면 요건에 따라 <b>국민연금·건강보험</b> 가입 대상이 될 수 있어요. 이 계산에는 넣지 않았으니 참고만 해주세요.</li>
+      <li>한 달에 <b>8일 이상</b> 또는 <b>60시간 이상</b> 일하거나 월 <b>220만원 이상</b> 받으면 요건에 따라 <b>국민연금·건강보험</b> 가입 대상이 될 수 있어요. 이 계산에는 넣지 않았으니 요건에 해당되는 근로자의 경우 꼭 확인하고 지급하시길 바랍니다.</li>
       <li><b>3개월 이상</b> 계속 일하면 상용직으로 바꿔야 하고, <b>건설업은 1개월 이상</b>이에요.</li>
       <li>자세한 부분은 관련 노무 사무실을 이용해주세요.</li>
+    </ul>
+  </div>
+  <div class="box info">
+    <p class="box-t">일용직에게 지급했다면 세무사무실에 공유해주세요</p>
+    <p>일용직을 쓴 달에는 <b>고용보험 근로내용확인신고</b>(일한 달의 다음 달 15일까지)와 <b>일용근로소득 지급명세서</b> 제출이 필요해요. 신고에 쓰도록 아래 내용을 정리해 세무사무실에 공유해주세요.</p>
+    <ul>
+      <li>근로자 성명, 주민등록번호(외국인은 외국인등록번호)</li>
+      <li>하는 일(직종)과 현장명(건설업)</li>
+      <li><b>실제로 일한 날짜</b>(날짜별로 표시)와 하루 근무시간</li>
+      <li>일당과 지급한 총액, 지급한 날짜</li>
     </ul>
   </div>
   <details class="law"><summary>법령 근거</summary><p><b>소득세법 제47조제2항</b> 일용근로자 근로소득공제 1일 15만원 · <b>제129조</b> 일용근로소득 원천징수세율 6% · <b>제59조제3항</b> 산출세액의 55% 세액공제 · <b>제86조</b> 원천징수세액 1천원 미만 소액부징수</p></details>
 </section>
 
-<!-- 4. 사업소득 -->
-<section class="pane" id="biz" role="tabpanel" data-title="3.3% 사업소득 계산" hidden>
-  <h2>프리랜서 3.3% 사업소득</h2>
-  <p class="lead">강사·디자이너처럼 사업소득으로 지급할 때 떼는 소득세 3%와 지방소득세 0.3%를 계산해요.</p>
-  <div class="form">
-    <div class="f full"><span>계산 방향</span>
-      <div class="seg"><label><input type="radio" name="biz-mode" data-k="mode" value="fwd" checked>세전 → 세후</label><label><input type="radio" name="biz-mode" data-k="mode" value="rev">세후 → 세전</label></div>
-    </div>
-    <label class="f full"><span data-lbl="bizAmount">지급할 금액(세전)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="amount" value="1000000"><em>원</em></div><small class="kr"></small></label>
+<!-- 3.3% 사업소득 -->
+<section class="pane" id="biz" data-title="3.3% 사업소득 계산" hidden>
+  <div class="pane-head"><h2>프리랜서 3.3% 사업소득</h2><p>강사·디자이너처럼 사업소득으로 지급할 때 떼는 소득세 3%와 지방소득세 0.3%를 계산해요.</p></div>
+  <div class="cols">
+    <div class="form"><div class="fs"><h3>금액</h3>
+      <div class="f"><span>입력하는 금액</span>
+        <div class="seg"><label><input type="radio" name="biz-mode" data-k="mode" value="gross" checked>세전 지급액<br><small>3.3% 떼기 전</small></label><label><input type="radio" name="biz-mode" data-k="mode" value="net">실지급액<br><small>3.3% 뗀 후</small></label></div>
+      </div>
+      <label class="f"><span data-lbl="bizAmount">세전 지급액</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="amount" value="1000000"><em>원</em></div><small class="kr"></small></label>
+    </div></div>
+    <div class="result" data-out></div>
   </div>
-  <div class="result" data-out></div>
   <div class="box info">
     <p class="box-t">세무사무실에 공유해주세요</p>
-    <p>실제로 고용 관계(출퇴근·업무 지시 등)가 있으면 사업소득이 아니라 근로소득으로 봐야 할 수 있어요. 지급하시기 전에 지급 대상과 금액을 세무사무실에 공유해주세요.</p>
+    <p>출퇴근 시간이 정해져 있거나 업무 지시를 받는 등 실제로 고용 관계가 있으면 사업소득이 아니라 근로소득으로 봐야 할 수 있어요. 지급하시기 전에 지급 대상과 금액을 세무사무실에 공유해주세요.</p>
   </div>
   <details class="law"><summary>법령 근거</summary><p><b>소득세법 제129조</b> 원천징수세율(사업소득 3%) · 지방소득세는 소득세의 10%</p></details>
 </section>
 
-<!-- 5. 연봉별 실수령표 -->
-<section class="pane" id="table" role="tabpanel" data-title="연봉별 실수령표" hidden>
-  <h2>연봉별 월 실수령액 표</h2>
-  <p class="lead">연봉 구간별로 매달 받는 금액을 한눈에 보여드려요. 조건을 바꾸면 표가 다시 계산돼요.</p>
-  <div class="form">
-    <label class="f"><span>공제대상 가족 수(본인 포함)</span><select data-k="fam"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
-    <label class="f"><span>8세~20세 자녀 수</span><select data-k="kids"><option>0</option><option>1</option><option>2</option><option>3</option></select></label>
-    <label class="f"><span>비과세 식대</span><select data-k="meal"><option value="200000" selected>월 20만원 포함</option><option value="0">없음</option></select></label>
-    <label class="f"><span>연봉 범위</span><select data-k="range"><option value="20-60">2,000만 ~ 6,000만원</option><option value="60-100">6,000만 ~ 1억원</option><option value="20-100" selected>2,000만 ~ 1억원</option></select></label>
+<!-- 통상임금 -->
+<section class="pane" id="ord" data-title="통상임금 계산" hidden>
+  <div class="pane-head"><h2>통상임금 계산</h2><p>통상임금은 매달 정해서 주는 임금이에요. 연장·야간·휴일수당, 연차수당을 계산할 때 기준이 돼요.</p></div>
+  <div class="cols">
+    <div class="form">
+      <div class="fs"><h3>근로시간</h3>
+        <div class="g2">
+          <label class="f"><span>1일 소정근로시간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="dayH" value="8"><em>시간</em></div></label>
+          <label class="f"><span>주 근무일수</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="wdays" value="5"><em>일</em></div></label>
+          <label class="f full"><span>월 소정근로시간(직접 입력)</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="hoursOv"><em>시간</em></div><small class="mh">비워두면 주휴시간을 넣어 자동 계산해요.</small></label>
+        </div>
+      </div>
+      <div class="fs"><h3>임금</h3>
+        <label class="f"><span>월 기본급</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="base" value="2500000"><em>원</em></div><small class="kr"></small></label>
+        <label class="f"><span>월 고정수당 합계</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="fixed"><em>원</em></div><small>매달 정기적·일률적으로 주는 수당. 예: 직책·직무수당, 자격수당, 가족수당(모든 직원에게 일률 지급) 등</small></label>
+        <label class="f"><span>연간 정기상여금</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="bonusY"><em>원</em></div><small>미리 정해서 정기적으로 주는 상여금의 1년 합계. 12로 나눠 월 통상임금에 더해요.</small></label>
+      </div>
+      <div data-common="round"></div>
+    </div>
+    <div class="result" data-out></div>
   </div>
-  <div class="result" data-out></div>
-</section>
-
-<!-- 6. 연차수당 -->
-<section class="pane" id="leave" role="tabpanel" data-title="연차수당 계산" hidden>
-  <h2>연차수당(미사용 연차) 계산</h2>
-  <p class="lead">쓰지 못한 연차를 돈으로 주는 금액이에요. 통상임금 → 시급 → 1일 통상임금 → 남은 연차일수 순서로 계산해요.</p>
-  <div class="form">
-    <label class="f"><span>월 통상임금</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="ord" value="2500000"><em>원</em></div><small class="kr"></small><small>기본급과 매달 정해서 주는 고정수당의 합계예요.</small></label>
-    <label class="f"><span>남은 연차일수</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="days" value="15"><em>일</em></div></label>
-    <label class="f"><span>월 소정근로시간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="hours" value="209"><em>시간</em></div><small>주 40시간이면 209시간(주휴 포함)</small></label>
-    <label class="f"><span>1일 소정근로시간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="dayH" value="8"><em>시간</em></div></label>
-    <div class="full" data-common="round"></div>
-  </div>
-  <div class="result" data-out></div>
-  <details class="law"><summary>법령 근거</summary><p><b>근로기준법 제60조</b> 연차 유급휴가 · <b>근로기준법 시행령 제6조</b> 통상임금</p></details>
-</section>
-
-<!-- 7. 일할계산 -->
-<section class="pane" id="prorate" role="tabpanel" data-title="일할계산" hidden>
-  <h2>입사·퇴사한 달 일할계산</h2>
-  <p class="lead">달 중간에 입사하거나 퇴사했을 때 근무한 날만큼 월급을 나눠 계산해요. 같은 달 안의 기간만 넣어주세요.</p>
-  <div class="form">
-    <label class="f"><span>근무 시작일</span><input type="date" data-k="s" value="2026-10-06"></label>
-    <label class="f"><span>근무 종료일</span><input type="date" data-k="e" value="2026-10-31"></label>
-    <label class="f full"><span>계산 방식</span><select data-k="method"><option value="calendar" selected>역일수 기준 — 근무 날수 ÷ 그 달 날수(28~31일)</option><option value="fixed30">30일 기준 — 근무 날수 ÷ 30일</option><option value="weekday">근무일 기준 — 근무한 평일 수 ÷ 그 달 평일 수(월~금)</option></select><small>회사 취업규칙이나 근로계약서에 정한 방식이 있으면 그 방식을 따라주세요.</small></label>
-    <h3>월 금액(한 달 전체 기준)</h3>
-    <label class="f"><span>기본급</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_base" value="2300000"><em>원</em></div></label>
-    <label class="f"><span>연장수당</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_ot"><em>원</em></div></label>
-    <label class="f"><span>휴일수당</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_hol"><em>원</em></div></label>
-    <label class="f"><span>기타 수당</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_etc"><em>원</em></div></label>
-    <label class="f"><span>식대(비과세)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_meal" value="200000"><em>원</em></div></label>
-    <label class="f"><span>자가운전보조금(비과세)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_car"><em>원</em></div></label>
-    <label class="f"><span>보육수당(비과세)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_child"><em>원</em></div></label>
-  </div>
-  <div class="result" data-out></div>
-  <div class="box info"><p class="box-t">알아두세요</p><p>원 단위 미만은 버렸어요. 연장·휴일수당처럼 실제 근무시간으로 계산하는 수당은 일할하지 않고 실제 시간으로 따로 계산하는 경우가 많아요.</p></div>
-</section>
-
-<!-- 8. 통상·평균임금 -->
-<section class="pane" id="wage" role="tabpanel" data-title="통상임금·평균임금 계산" hidden>
-  <h2>통상임금과 평균임금</h2>
-  <p class="lead"><b>통상임금</b>(매달 정해서 주는 임금, 연장수당·연차수당의 기준)과 <b>평균임금</b>(최근 3개월 동안 실제로 받은 임금의 하루 평균, 퇴직금의 기준)을 계산해요.</p>
-  <div class="form">
-    <h3>통상임금</h3>
-    <label class="f"><span>기본급</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="base" value="2500000"><em>원</em></div></label>
-    <label class="f"><span>고정수당 합계</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="fixed"><em>원</em></div><small>직책수당·자격수당처럼 매달 정해서 주는 수당</small></label>
-    <label class="f"><span>주 소정근로시간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="weekH" value="40"><em>시간</em></div><small class="mh"></small></label>
-    <label class="f"><span>1일 소정근로시간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="dayH" value="8"><em>시간</em></div></label>
-    <h3>평균임금</h3>
-    <label class="f"><span>마지막 근무일(퇴사일)</span><input type="date" data-k="last" value="2026-07-31"><small>이날을 포함해 이전 3개월로 계산해요.</small></label>
-    <label class="f"><span>월 임금총액(3개월 같다면)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="monthly" value="2700000"><em>원</em></div><small>연장수당·식대 등 매달 받은 임금 모두 포함</small></label>
-    <label class="f"><span>3개월 임금총액(직접 입력)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="total3"><em>원</em></div><small>달마다 금액이 다르면 3개월 합계를 넣어주세요. 넣으면 위 월 임금총액 대신 써요.</small></label>
-    <label class="f"><span>최근 1년 상여금 합계</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="bonus"><em>원</em></div><small>3/12만 평균임금에 넣어요.</small></label>
-    <label class="f"><span>연차수당(최근 1년 지급분)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="leaveP"><em>원</em></div><small>3/12만 평균임금에 넣어요.</small></label>
-    <div class="full" data-common="round"></div>
-  </div>
-  <div class="result" data-out></div>
   <div class="box info">
-    <p class="box-t">통상임금 범위가 넓어졌어요</p>
-    <p>2024년 12월 대법원 전원합의체 판결로, 근무일수 등 조건이 붙은 정기상여금·수당도 통상임금에 들어갈 수 있게 됐어요. 어떤 수당을 넣어야 할지 애매하면 세무사무실이나 노무 사무실에 공유해주세요.</p>
+    <p class="box-t">어떤 수당이 통상임금에 들어가는지는 노무 사무실에 확인해주세요</p>
+    <p>2024년 12월 대법원 판결로 재직 조건·근무일수 조건이 붙은 정기상여금·수당도 통상임금에 들어갈 수 있게 됐어요. 성과급·실적급처럼 판단이 애매한 수당은 공인노무사 등 노무 전문가와 확인해주세요.</p>
   </div>
-  <details class="law"><summary>법령 근거</summary><p><b>근로기준법 제2조제1항제6호</b> 평균임금(3개월 임금총액 ÷ 총일수) · <b>근로기준법 제2조제2항</b> 평균임금이 통상임금보다 적으면 통상임금을 평균임금으로 함 · <b>근로기준법 시행령 제6조</b> 통상임금 · 대법원 2024. 12. 19. 선고 2020다247190 전원합의체 판결</p></details>
+  <details class="law"><summary>법령 근거</summary><p><b>근로기준법 시행령 제6조</b> 통상임금 · 대법원 2024. 12. 19. 선고 2020다247190 전원합의체 판결</p></details>
 </section>
 
-<!-- 9. 퇴직금 -->
-<section class="pane" id="sev" role="tabpanel" data-title="퇴직금 계산" hidden>
-  <h2>퇴직금과 퇴직소득세</h2>
-  <p class="lead">1일 평균임금 × 재직일수 × 30 ÷ 365로 퇴직금을 계산하고, 떼야 할 퇴직소득세까지 보여드려요.</p>
-  <div class="form">
-    <label class="f"><span>입사일</span><input type="date" data-k="join" value="2022-01-01"></label>
-    <label class="f"><span>마지막 근무일(퇴사일)</span><input type="date" data-k="last" value="2026-07-31"></label>
-    <label class="f"><span>재직일수에서 뺄 날수</span><div class="in"><input type="text" inputmode="numeric" class="int" data-k="excl"><em>일</em></div><small>육아휴직 등으로 근속기간에서 빼는 날이 있을 때만</small></label>
-    <label class="f"><span>월 임금총액(최근 3개월)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="monthly" value="5000000"><em>원</em></div><small>기본급+수당 모두 포함</small></label>
-    <label class="f"><span>3개월 임금총액(직접 입력)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="total3"><em>원</em></div><small>달마다 다르면 합계를 넣어주세요.</small></label>
-    <label class="f"><span>월 통상임금</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="ord"><em>원</em></div><small>비워두면 월 임금총액으로 계산해요.</small></label>
-    <label class="f"><span>최근 1년 상여금 합계</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="bonus"><em>원</em></div></label>
-    <label class="f"><span>연차수당(최근 1년 지급분)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="leaveP"><em>원</em></div></label>
-    <div class="full" data-common="round"></div>
+<!-- 평균임금·퇴직금 -->
+<section class="pane" id="sev" data-title="평균임금·퇴직금 계산" hidden>
+  <div class="pane-head"><h2>평균임금 · 퇴직금 계산</h2><p>퇴직 전 3개월 동안 받은 임금으로 1일 평균임금을 구하고, 퇴직금과 떼야 할 퇴직소득세까지 계산해요.</p></div>
+  <div class="cols">
+    <div class="form">
+      <div class="fs"><h3><span class="no">1</span>근무기간</h3>
+        <div class="g2">
+          <label class="f"><span>입사일</span><input type="date" data-k="join" value="2022-01-01"></label>
+          <label class="f"><span>마지막 근무일(퇴사일)</span><input type="date" data-k="last" value="2026-07-31"></label>
+          <label class="f full"><span>재직일수에서 뺄 날수(선택)</span><div class="in"><input type="text" inputmode="numeric" class="int" data-k="excl"><em>일</em></div><small class="svcinfo">육아휴직 등으로 근속기간에서 빼는 날이 있을 때만 넣어주세요.</small></label>
+        </div>
+      </div>
+      <div class="fs"><h3><span class="no">2</span>퇴직 전 3개월 동안 받은 임금</h3>
+        <p class="hint">마지막 근무일을 기준으로 기간이 자동으로 나뉘어요. 그 기간에 실제로 받은 금액을 넣어주세요. 기타수당에는 연장수당·식대 등 매달 받은 다른 임금을 모두 넣어요.</p>
+        <div class="g2" style="align-items:end">
+          <label class="f"><span>매달 같은 기본급</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="qB" value="3466666"><em>원</em></div></label>
+          <label class="f"><span>매달 같은 기타수당</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="qO" value="1533334"><em>원</em></div></label>
+          <button class="btn full" type="button" data-act="fill">아래 표에 채우기(한 달이 안 되는 기간은 일할)</button>
+        </div>
+        <div class="segwrap"></div>
+      </div>
+      <div class="fs"><h3><span class="no">3</span>상여금 · 연차수당(퇴직 전 1년)</h3>
+        <p class="hint">평균임금에는 퇴직 전 1년 동안 받은 상여금과 연차수당의 3/12(3개월분)를 더해요.</p>
+        <div class="g2">
+          <label class="f"><span>상여금 1년 합계</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="bonus"><em>원</em></div></label>
+          <label class="f"><span>연차수당 1년 합계</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="leaveP"><em>원</em></div></label>
+        </div>
+      </div>
+      <div class="fs"><h3><span class="no">4</span>통상임금과 비교(선택)</h3>
+        <label class="f"><span>월 통상임금</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="ord" value="5000000"><em>원</em></div><small>평균임금이 통상임금보다 적으면 통상임금(÷209×8)으로 계산해요. 비워두면 비교하지 않아요.</small></label>
+      </div>
+      <div data-common="round"></div>
+    </div>
+    <div class="result" data-out></div>
   </div>
-  <div class="result" data-out></div>
   <div class="box warn">
     <p class="box-t">퇴직금 지급 전 확인해주세요</p>
     <ul>
@@ -370,82 +457,153 @@ a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-of
       <li>퇴직연금(DB·DC)에 가입했거나 중간정산을 한 적이 있으면 계산이 달라요. 세무사무실에 공유해주세요.</li>
     </ul>
   </div>
-  <details class="law"><summary>법령 근거</summary><p><b>근로자퇴직급여 보장법 제4조</b> 퇴직급여제도 설정(1년 미만·주 15시간 미만 제외) · <b>제8조</b> 계속근로기간 1년에 30일분 이상의 평균임금 · <b>제9조</b> 퇴직일부터 14일 이내 지급 · <b>소득세법 제48조</b> 퇴직소득공제(근속연수공제·환산급여공제) · <b>제55조제2항</b> 퇴직소득 산출세액</p></details>
+  <details class="law"><summary>법령 근거</summary><p><b>근로기준법 제2조제1항제6호</b> 평균임금 · <b>제2조제2항</b> 평균임금이 통상임금보다 적으면 통상임금을 평균임금으로 함 · <b>근로자퇴직급여 보장법 제4조</b> 퇴직급여제도(1년 미만·주 15시간 미만 제외) · <b>제8조</b> 계속근로기간 1년에 30일분 이상의 평균임금 · <b>제9조</b> 퇴직일부터 14일 이내 지급 · <b>소득세법 제48조</b> 퇴직소득공제 · <b>제55조제2항</b> 퇴직소득 산출세액</p></details>
 </section>
 
-<!-- 10. 수당 -->
-<section class="pane" id="ot" role="tabpanel" data-title="연장·야간·휴일수당 계산" hidden>
-  <h2>연장·야간·휴일근로수당</h2>
-  <p class="lead">정해진 시간보다 더 일하거나 밤(22시~06시)·휴일에 일하면 통상시급에 가산율을 곱해 수당을 줘요.</p>
+<!-- 연차수당 -->
+<section class="pane" id="leave" data-title="연차수당 계산" hidden>
+  <div class="pane-head"><h2>연차수당(미사용 연차) 계산</h2><p>쓰지 못한 연차를 돈으로 주는 금액이에요. 통상임금 → 시급 → 1일 통상임금 → 남은 연차일수 순서로 계산해요.</p></div>
+  <div class="cols">
+    <div class="form">
+      <div class="fs"><h3>입력</h3>
+        <label class="f"><span>월 통상임금</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="ord" value="2500000"><em>원</em></div><small class="kr"></small><small>기본급과 매달 정해서 주는 고정수당의 합계예요. 모르면 <a href="#ord" data-goto="ord">통상임금 계산</a>에서 구해보세요.</small></label>
+        <div class="g2">
+          <label class="f"><span>남은 연차일수</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="days" value="15"><em>일</em></div></label>
+          <label class="f"><span>월 소정근로시간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="hours" value="209"><em>시간</em></div><small>주 40시간이면 209시간</small></label>
+          <label class="f"><span>1일 소정근로시간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="dayH" value="8"><em>시간</em></div></label>
+        </div>
+      </div>
+      <div data-common="round"></div>
+    </div>
+    <div class="result" data-out></div>
+  </div>
+  <div class="box warn"><p class="box-t">상시 5인 미만 사업장은 연차휴가 규정이 적용되지 않아요</p><p>연차 유급휴가(근로기준법 제60조)는 상시 근로자 5인 이상 사업장에 적용돼요. 5인 미만 사업장은 취업규칙·근로계약으로 정한 경우에만 연차와 연차수당이 있어요.</p></div>
+  <details class="law"><summary>법령 근거</summary><p><b>근로기준법 제60조</b> 연차 유급휴가 · <b>근로기준법 시행령 별표1</b> 상시 4명 이하 사업장 적용 규정(제60조 미포함) · <b>근로기준법 시행령 제6조</b> 통상임금</p></details>
+</section>
+
+<!-- 일할계산 -->
+<section class="pane" id="prorate" data-title="일할계산" hidden>
+  <div class="pane-head"><h2>입사·퇴사한 달 일할계산</h2><p>달 중간에 입사하거나 퇴사했을 때 근무한 날만큼 월급을 나눠 계산해요. 같은 달 안의 기간만 넣어주세요.</p></div>
+  <div class="cols">
+    <div class="form">
+      <div class="fs"><h3>기간</h3>
+        <div class="g2">
+          <label class="f"><span>근무 시작일</span><input type="date" data-k="s" value="2026-10-06"></label>
+          <label class="f"><span>근무 종료일</span><input type="date" data-k="e" value="2026-10-31"></label>
+          <label class="f full"><span>계산 방식</span><select data-k="method"><option value="calendar" selected>역일수 기준 — 근무 날수 ÷ 그 달 날수</option><option value="fixed30">30일 기준 — 근무 날수 ÷ 30일</option><option value="weekday">근무일 기준 — 근무한 평일 ÷ 그 달 평일(월~금)</option></select><small>취업규칙이나 근로계약서에 정한 방식이 있으면 그 방식을 따라주세요.</small></label>
+        </div>
+      </div>
+      <div class="fs"><h3>월 금액(한 달 전체 기준)</h3>
+        <div class="g2">
+          <label class="f"><span>기본급</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_base" value="2300000"><em>원</em></div></label>
+          <label class="f"><span>연장수당</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_ot"><em>원</em></div></label>
+          <label class="f"><span>휴일수당</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_hol"><em>원</em></div></label>
+          <label class="f"><span>기타 수당</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_etc"><em>원</em></div></label>
+          <label class="f"><span>식대(비과세)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_meal" value="200000"><em>원</em></div></label>
+          <label class="f"><span>자가운전보조금(비과세)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_car"><em>원</em></div></label>
+          <label class="f"><span>보육수당(비과세)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_child"><em>원</em></div></label>
+        </div>
+      </div>
+    </div>
+    <div class="result" data-out></div>
+  </div>
+</section>
+
+<!-- 수당 -->
+<section class="pane" id="ot" data-title="연장·야간·휴일수당 계산" hidden>
+  <div class="pane-head"><h2>연장·야간·휴일근로수당</h2><p>정해진 시간보다 더 일하거나 밤(22시~06시)·휴일에 일하면 통상시급에 가산율을 곱해 수당을 줘요.</p></div>
   <div class="box warn"><p class="box-t">상시 근로자 5인 이상 사업장만 가산해요</p><p>상시 5인 미만 사업장은 연장·야간·휴일 가산(50%·100%)이 적용되지 않아요. 일한 시간만큼 통상시급(100%)만 주면 돼요.</p></div>
   <div class="tw"><table class="t">
     <thead><tr><th>근무일</th><th>시간(예시)</th><th>수당</th><th>계산 방법</th><th>법령</th></tr></thead>
     <tbody>
-      <tr><td rowspan="2"><b>평일</b></td><td>18:00~22:00</td><td>연장수당</td><td>통상시급 × 시간 × 150%</td><td>근로기준법 제56조제1항</td></tr>
-      <tr><td>22:00~06:00</td><td>연장수당 + 야간수당</td><td>통상시급 × 시간 × 200%</td><td>제56조제1항·제3항</td></tr>
-      <tr><td rowspan="3"><b>휴일</b></td><td>09:00~18:00 (8시간 이내)</td><td>휴일수당</td><td>통상시급 × 시간 × 150%</td><td>제56조제2항제1호</td></tr>
-      <tr><td>18:00~22:00 (8시간 초과)</td><td>휴일수당(8시간 초과)</td><td>통상시급 × 시간 × 200%</td><td>제56조제2항제2호</td></tr>
-      <tr><td>22:00~06:00 (8시간 초과)</td><td>휴일수당(8시간 초과) + 야간수당</td><td>통상시급 × 시간 × 250%</td><td>제56조제2항·제3항</td></tr>
+      <tr><td rowspan="2"><b>평일</b></td><td>18:00~22:00</td><td>연장수당</td><td>통상시급 × 시간 × 150% (100% + 50%)</td><td>근로기준법 제56조제1항</td></tr>
+      <tr><td>22:00~06:00</td><td>연장수당 + 야간수당</td><td>통상시급 × 시간 × 200% (100% + 50% + 50%)</td><td>제56조제1항·제3항</td></tr>
+      <tr><td rowspan="3"><b>휴일</b></td><td>09:00~18:00 (8시간 이내)</td><td>휴일수당</td><td>통상시급 × 시간 × 150% (100% + 50%)</td><td>제56조제2항제1호</td></tr>
+      <tr><td>18:00~22:00 (8시간 초과)</td><td>휴일수당(8시간 초과)</td><td>통상시급 × 시간 × 200% (100% + 100%)</td><td>제56조제2항제2호</td></tr>
+      <tr><td>22:00~06:00 (8시간 초과)</td><td>휴일수당(8시간 초과) + 야간수당</td><td>통상시급 × 시간 × 250% (100% + 100% + 50%)</td><td>제56조제2항·제3항</td></tr>
     </tbody>
   </table></div>
-  <p class="muted" style="font-size:.88rem">야간근로는 22시부터 다음 날 06시까지예요. 소정근로시간 안에서 야간에 일하면(연장이 아닌 야간) 가산분 50%만 더 줘요.</p>
-  <div class="form">
-    <h3>통상시급</h3>
-    <label class="f"><span>통상시급</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="hourly"><em>원</em></div><small>모르면 비워두고 아래 월 통상임금을 넣어주세요.</small></label>
-    <label class="f"><span>월 통상임금</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="ord" value="2500000"><em>원</em></div><small class="hh"></small></label>
-    <label class="f"><span>월 소정근로시간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="hours" value="209"><em>시간</em></div></label>
-    <label class="chk" style="align-self:end"><input type="checkbox" data-k="five" checked>상시 근로자 5인 이상 사업장이에요</label>
-    <h3>이번 달 근무시간</h3>
-    <label class="f"><span>평일 연장</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="h_ot" value="10"><em>시간</em></div></label>
-    <label class="f"><span>평일 연장 + 야간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="h_otn"><em>시간</em></div></label>
-    <label class="f"><span>야간만(소정근로 중)</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="h_n"><em>시간</em></div></label>
-    <label class="f"><span>휴일 8시간 이내</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="h_h8"><em>시간</em></div></label>
-    <label class="f"><span>휴일 8시간 이내 + 야간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="h_h8n"><em>시간</em></div></label>
-    <label class="f"><span>휴일 8시간 초과</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="h_ho"><em>시간</em></div></label>
-    <label class="f"><span>휴일 8시간 초과 + 야간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="h_hon"><em>시간</em></div></label>
-    <div class="full" data-common="round"></div>
+  <div class="cols">
+    <div class="form">
+      <div class="fs"><h3>통상시급</h3>
+        <div class="g2">
+          <label class="f"><span>통상시급</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="hourly"><em>원</em></div><small>모르면 비워두고 옆에 월 통상임금을 넣어주세요.</small></label>
+          <label class="f"><span>월 통상임금</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="ord" value="2500000"><em>원</em></div><small class="hh"></small></label>
+          <label class="f"><span>월 소정근로시간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="hours" value="209"><em>시간</em></div></label>
+          <label class="chk" style="align-self:center"><input type="checkbox" data-k="five" checked>상시 근로자 5인 이상 사업장이에요</label>
+        </div>
+      </div>
+      <div class="fs"><h3>이번 달 근무시간</h3>
+        <div class="g2">
+          <label class="f"><span>평일 연장</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="h_ot" value="10"><em>시간</em></div></label>
+          <label class="f"><span>평일 연장 + 야간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="h_otn"><em>시간</em></div></label>
+          <label class="f"><span>야간만(소정근로 중)</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="h_n"><em>시간</em></div></label>
+          <label class="f"><span>휴일 8시간 이내</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="h_h8"><em>시간</em></div></label>
+          <label class="f"><span>휴일 8시간 이내 + 야간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="h_h8n"><em>시간</em></div></label>
+          <label class="f"><span>휴일 8시간 초과</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="h_ho"><em>시간</em></div></label>
+          <label class="f"><span>휴일 8시간 초과 + 야간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="h_hon"><em>시간</em></div></label>
+        </div>
+      </div>
+      <div data-common="round"></div>
+    </div>
+    <div class="result" data-out></div>
   </div>
-  <div class="result" data-out></div>
-  <details class="law"><summary>법령 근거</summary><p><b>근로기준법 제56조</b> 연장·야간 및 휴일 근로(제1항 연장 50%, 제2항 휴일 8시간 이내 50%·초과 100%, 제3항 야간 50%) · <b>근로기준법 제11조</b> 상시 5명 이상 사업장에 적용(5명 미만은 시행령으로 정한 일부 규정만 적용)</p></details>
+  <details class="law"><summary>법령 근거</summary><p><b>근로기준법 제56조</b> 연장·야간 및 휴일 근로(제1항 연장 50%, 제2항 휴일 8시간 이내 50%·초과 100%, 제3항 야간 50%) · <b>근로기준법 제11조, 시행령 별표1</b> 상시 4명 이하 사업장에는 제56조 미적용</p></details>
 </section>
 
-<!-- 11. 최저임금 -->
-<section class="pane" id="min" role="tabpanel" data-title="최저임금 확인" hidden>
-  <h2>최저임금 확인</h2>
-  <p class="lead">시급이나 월급이 최저임금보다 적지 않은지 확인해요.</p>
-  <div class="tw narrow"><table class="t">
+<!-- 최저임금 -->
+<section class="pane" id="min" data-title="최저임금 확인" hidden>
+  <div class="pane-head"><h2>최저임금 확인</h2><p>시급이나 월급이 최저임금보다 적지 않은지 확인해요.</p></div>
+  <div class="tw" style="max-width:640px"><table class="t">
     <thead><tr><th>적용연도</th><th class="n">시급</th><th class="n">일급(8시간)</th><th class="n">월급(209시간)</th></tr></thead>
     <tbody>
       <tr><td>2026년</td><td class="n">10,320원</td><td class="n">82,560원</td><td class="n">2,156,880원</td></tr>
       <tr><td>2027년</td><td class="n">10,700원</td><td class="n">85,600원</td><td class="n">2,236,300원</td></tr>
     </tbody>
   </table></div>
-  <div class="form">
-    <label class="f"><span>적용연도</span><select data-k="year"><option value="2026" selected>2026년</option><option value="2027">2027년</option></select></label>
-    <div class="f"><span>확인할 금액</span><div class="seg"><label><input type="radio" name="min-mode" data-k="mode" value="month" checked>월급</label><label><input type="radio" name="min-mode" data-k="mode" value="hour">시급</label></div></div>
-    <label class="f"><span data-lbl="minAmount">월 급여(최저임금에 들어가는 임금)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="amount" value="2200000"><em>원</em></div><small class="kr"></small></label>
-    <label class="f"><span>주 소정근로시간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="weekH" value="40"><em>시간</em></div><small class="mh"></small></label>
+  <div class="cols">
+    <div class="form"><div class="fs"><h3>입력</h3>
+      <div class="g2">
+        <label class="f"><span>적용연도</span><select data-k="year"><option value="2026" selected>2026년</option><option value="2027">2027년</option></select></label>
+        <label class="f"><span>주 소정근로시간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="weekH" value="40"><em>시간</em></div><small class="mh"></small></label>
+      </div>
+      <div class="seg"><label><input type="radio" name="min-mode" data-k="mode" value="month" checked>월급으로 확인</label><label><input type="radio" name="min-mode" data-k="mode" value="hour">시급으로 확인</label></div>
+      <label class="f"><span data-lbl="minAmount">월 급여(최저임금에 들어가는 임금)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="amount" value="2200000"><em>원</em></div><small class="kr"></small></label>
+    </div></div>
+    <div class="result" data-out></div>
   </div>
-  <div class="result" data-out></div>
-  <div class="box info"><p class="box-t">알아두세요</p><p>연장·휴일수당이나 실비로 주는 돈은 최저임금 계산에 들어가지 않아요. 상여금·식대 같은 복리후생비를 넣어야 하는지 애매하면 세무사무실이나 노무 사무실에 공유해주세요.</p></div>
+  <div class="box info"><p class="box-t">알아두세요</p><p>연장·휴일수당이나 실비로 주는 돈은 최저임금 계산에 들어가지 않아요. 상여금·식대 같은 복리후생비를 넣어야 하는지 애매하면 노무 사무실에 확인해주세요.</p></div>
   <details class="law"><summary>근거</summary><p>고용노동부 연도별 최저임금 결정현황(2026년 10,320원, 2027년 10,700원)</p></details>
 </section>
 
-<!-- 12. 요율표 -->
-<section class="pane" id="rates" role="tabpanel" data-title="4대보험·산재 요율표" hidden>
-  <h2>2026년 4대보험·산재보험 요율</h2>
-  <p class="lead">이 계산기에 쓴 요율이에요. 산재보험료는 업종마다 요율이 달라요. 아래 표에서 우리 회사 업종을 찾아보세요.</p>
+<!-- 요율표 -->
+<section class="pane" id="rates" data-title="4대보험·산재 요율표" hidden>
+  <div class="pane-head"><h2>2026년 4대보험 · 산재보험 요율</h2><p>이 계산기에 쓴 요율이에요. 산재보험료는 업종마다 요율이 달라요. 아래 표에서 우리 회사 업종을 찾아보세요.</p></div>
   <div class="box warn"><p class="box-t">2027년 요율은 아직 반영하지 않았어요</p><p>2027년 1월 급여를 지급하시기 전에 꼭 변동사항을 확인하고 지급해주세요.</p></div>
-  <div id="ratesOut"></div>
+  <div id="ratesOut" style="display:flex;flex-direction:column;gap:22px;max-width:900px"></div>
 </section>
 
 </main>
+</div>
 
 <footer class="foot">
   <p>2026년 11월 기준으로 작성했습니다. 이후 세법 개정이나 홈택스 화면 변경으로 내용이 달라질 수 있어요. 신고하시기 전에는 모든 내용을 세무사무실과 확인하신 뒤 진행해주세요.</p>
-  <p>계산 결과는 참고용이에요. 소득세는 근로소득 간이세액표(2026년 3월 1일 시행분)로 계산해서, 연말정산을 하면 실제 세금과 달라질 수 있어요. 국민연금은 신고된 기준소득월액, 건강보험은 신고된 보수월액으로 매기기 때문에 실제 고지 금액과 차이가 날 수 있어요.</p>
+  <p>계산 결과는 참고용이에요. 소득세는 근로소득 간이세액표(2026년 3월 1일 시행분)로 계산해서 연말정산 결과와 다를 수 있고, 4대보험은 공단에 신고된 금액으로 매겨져 실제 고지 금액과 차이가 날 수 있어요. 끝전 절사로 인해 단수 차이가 발생할 수 있어요.</p>
 </footer>
 </div>
+
+<dialog class="imgdlg" aria-label="결과 이미지">
+  <div class="in2">
+    <div class="r-head"><h3>결과 이미지</h3><button class="btn" type="button" data-dlg="close">닫기</button></div>
+    <div class="pv"><img alt="계산 결과 이미지"></div>
+    <div class="acts" style="border:0;padding:0">
+      <button class="btn main" type="button" data-dlg="copy">이미지 복사</button>
+      <button class="btn" type="button" data-dlg="save">이미지 저장</button>
+      <button class="btn" type="button" data-dlg="share" hidden>공유하기</button>
+    </div>
+    <p class="tip">PC 카카오톡: <b>이미지 복사</b>를 누른 뒤 채팅창에 붙여넣기(Ctrl+V) · 휴대폰: <b>공유하기</b>로 카카오톡을 고르거나, 이미지를 길게 눌러 저장한 뒤 보내주세요.</p>
+  </div>
+</dialog>
 <div class="toast" role="status" aria-live="polite"></div>
 <script src="taxtable-2026.js"></script>
 <script src="calc.js"></script>
