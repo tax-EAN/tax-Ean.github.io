@@ -345,6 +345,26 @@
         notes: [['원천징수한 세금은 지급한 달의 다음 달 10일까지 신고·납부해요.'], [ROUNDNOTE]] });
     },
 
+    etc: function (pane, o) {
+      setLabel(pane, 'etcAmount', o.mode === 'net' ? '실지급액(세금 뗀 후)' : '세전 지급액');
+      if (o.amount <= 0) return err(pane, '기타소득 계산 결과', '금액을 입력해주세요.');
+      var b = o.mode === 'net' ? C.etcReverse(o.amount) : C.etc(o.amount);
+      var notes = [];
+      if (b.exempt) notes.push(['지급액이 125,000원 이하(기타소득금액 5만원 이하)라 과세최저한으로 세금을 떼지 않아요.', 'ok']);
+      notes.push(['원천징수한 세금은 지급한 달의 다음 달 10일까지 신고·납부해요.']);
+      notes.push([ROUNDNOTE]);
+      show(pane, { title: '기타소득 계산 결과', cond: (o.mode === 'net' ? '실지급액 ' : '세전 지급액 ') + won(o.amount) + '원 기준 · 필요경비 60%',
+        sum: [S('세전 지급액', won(b.gross), '원', o.mode === 'net'), S('세금 합계', won(b.ded)), S('실지급액', won(b.net), '원', o.mode !== 'net')],
+        blocks: [{ t: 'table', head: ['항목', '금액'], num: [1], rows: [
+          { c: ['세전 지급액', won(b.gross)] },
+          { c: [['필요경비', '지급액의 60%'], won(b.cost)] },
+          { c: [['기타소득금액', '지급액 − 필요경비'], won(b.income)] },
+          { c: [['소득세', b.exempt ? '과세최저한' : '기타소득금액 × 20%'], won(b.tax)] },
+          { c: [['지방소득세', '소득세의 10%'], won(b.local)] },
+          { c: ['세금 합계', won(b.ded)], cls: 'tot' }, { c: ['실지급액', won(b.net)], cls: 'tot' }] }],
+        notes: notes });
+    },
+
     ord: function (pane, o) {
       var dayH = o.dayH || 8, wdays = o.wdays || 5, weekH = dayH * wdays;
       var holiday = weekH >= 15 ? Math.min(8, weekH / 40 * 8) : 0;
@@ -373,6 +393,7 @@
       if (!p) return err(pane, '퇴직금 계산 결과', '입사일과 마지막 근무일을 확인해주세요.');
       o = read(pane);
       var amts = p.segs.map(function (s, i) { return (o['s' + i + 'b'] || 0) + (o['s' + i + 'o'] || 0); });
+      if (!amts.some(function (x) { return x > 0; })) return err(pane, '평균임금 · 퇴직금 계산 결과', '퇴직 전 3개월 동안 받은 임금을 넣어주세요.');
       var ord = o.ord || 0;
       var s = C.severance({ join: o.join, lastDay: o.last, excludeDays: o.excl | 0, segAmounts: amts, bonus: o.bonus, leavePay: o.leaveP, ordinaryMonthly: ord, hours: 209, dayHours: 8, round: o.round });
       if (s.error) return err(pane, '퇴직금 계산 결과', s.error);

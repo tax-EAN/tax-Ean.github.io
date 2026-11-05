@@ -157,6 +157,19 @@
   }
   function bizReverse(net) { return biz(minSearch(0, 10000000000, function (g) { return biz(g).net >= net; })); }
 
+  /* ---------- 기타소득(필요경비 60%) ---------- */
+  function etc(gross) {
+    gross = Math.max(0, Math.round(gross || 0));
+    var cost = gross * 0.6, income = gross - cost;
+    var exempt = income <= 50000;                        // 과세최저한: 기타소득금액 건별 5만원 이하
+    var tax = exempt ? 0 : floor10(income * 0.2), local = floor10(tax * 0.1);
+    return { gross: gross, cost: cost, income: income, exempt: exempt, tax: tax, local: local, ded: tax + local, net: gross - tax - local };
+  }
+  function etcReverse(net) {
+    if (net <= 125000) return etc(net);                  // 125,000원 이하는 세금 없음
+    return etc(minSearch(125001, 10000000000, function (g) { return etc(g).net >= net; }));
+  }
+
   /* ---------- 날짜 ---------- */
   function D(s) { if (!s) return null; var p = String(s).split('-'); if (p.length < 3) return null; var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])); return isNaN(d) ? null : d; }
   function ymd(d) { return d.toISOString().slice(0, 10); }
@@ -305,7 +318,7 @@
     RATES: RATES, INDUSTRY: INDUSTRY, floor10: floor10, unit: unit,
     tableTax: tableTax, incomeTax: incomeTax, kidDeduction: kidDeduction, nontaxSplit: nontaxSplit,
     salary: salary, salaryReverse: salaryReverse, daily: daily, dailyReverse: dailyReverse,
-    biz: biz, bizReverse: bizReverse, prorate: prorate, monthlyHours: monthlyHours,
+    biz: biz, bizReverse: bizReverse, etc: etc, etcReverse: etcReverse, prorate: prorate, monthlyHours: monthlyHours,
     averageWage: averageWage, avgSegments: avgSegments, wageInPeriod: wageInPeriod, monthsDiff: monthsDiff, retirementTax: retirementTax, severance: severance,
     leavePay: leavePay, overtime: overtime, OT: OT, D: D, ymd: ymd, daysBetween: daysBetween
   };
