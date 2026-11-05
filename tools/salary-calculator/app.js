@@ -366,30 +366,71 @@
     },
 
     hol: function (pane, o) {
+      showIf(pane, o);
       if (!(o.hourly > 0)) return err(pane, '주휴수당 계산 결과', '시급을 입력해주세요.');
+      if (o.unit === 'month') {
+        var weeks = [], total = 0, sumH = 0, n = 0;
+        for (var w = 1; w <= 5; w++) {
+          var hh = (o['w' + w + 'h'] || 0) + (+o['w' + w + 'm'] || 0) / 60;
+          if (!(hh > 0)) continue;
+          n++; sumH += Math.min(40, hh);
+          weeks.push({ w: w, h: hh, att: o['w' + w + 'a'] });
+        }
+        if (!n) return err(pane, '주휴수당 계산 결과', '주차별 근무시간을 넣어주세요.');
+        var avg = sumH / n, rows = [];
+        weeks.forEach(function (x, idx) {
+          var last = idx === weeks.length - 1;
+          var r = C.holidayPay({ hourly: o.hourly, weekHOv: x.h, attended: x.att, continuing: last ? o.cont : true });
+          var why = !r.eligibleHours ? '15시간 미만' : !x.att ? '결근 있음' : (last && !o.cont) ? '그 주 퇴사' : '';
+          total += r.pay;
+          rows.push({ c: [[x.w + '주차', why ? '미발생: ' + why : ''], [wonD(Math.min(40, x.h)) + '시간', x.h > 40 ? '입력 ' + wonD(x.h) + '시간 중 40시간' : ''], wonD(r.ok ? r.holidayH : 0) + '시간', won(r.pay)] });
+        });
+        rows.push({ c: ['합계', wonD(sumH) + '시간', '', won(total)], cls: 'tot' });
+        var notes = [['주별로 15시간 이상·개근이면 그 주 주휴수당이 생겨요. 주휴시간 = 주 소정근로시간 ÷ 40 × 8(최대 8시간).']];
+        notes.push(['15시간 기준은 원칙적으로 4주 평균으로 판단해요. 이번 입력의 주 평균은 ' + wonD(avg) + '시간이에요.' + (avg >= 15 ? '' : ' 평균이 15시간 미만이면 주휴수당 대상이 아닐 수 있어요.'), avg >= 15 ? '' : 'w']);
+        notes.push([ROUNDNOTE]);
+        return show(pane, { title: '주휴수당 계산 결과(월단위)', cond: '시급 ' + won(o.hourly) + '원 · ' + n + '주',
+          sum: [S('주 평균 근무시간', wonD(avg), '시간'), S('한 달 주휴수당', won(total), '원', true)],
+          blocks: [{ t: 'table', head: ['주차', '소정근로시간', '주휴시간', '주휴수당'], num: [1, 2, 3], rows: rows }], notes: notes });
+      }
       var r = C.holidayPay({ hourly: o.hourly, dayH: o.dayH, wdays: o.wdays, weekHOv: o.weekHOv, attended: o.att, continuing: o.cont });
       if (!(r.raw > 0)) return err(pane, '주휴수당 계산 결과', '근무시간을 입력해주세요.');
       var reasons = [];
       if (!r.eligibleHours) reasons.push('주 소정근로시간이 15시간 미만');
       if (!o.att) reasons.push('개근하지 않음');
       if (!o.cont) reasons.push('그 주에 퇴사');
-      var notes = [];
-      notes.push(r.ok ? ['주휴수당 요건을 갖췄어요.', 'ok'] : ['주휴수당이 생기지 않아요: ' + reasons.join(', '), 'w']);
-      if (r.over40) notes.push(['주 소정근로시간 ' + wonD(r.raw) + '시간 중 40시간만 반영했어요. 넘는 시간은 연장근로수당으로 따로 계산해요.', 'w']);
-      notes.push(['월 환산은 1년 365일 ÷ 7일 ÷ 12개월(약 4.345주)로 계산했어요.']);
-      notes.push([ROUNDNOTE]);
+      var notes2 = [r.ok ? ['주휴수당 요건을 갖췄어요.', 'ok'] : ['주휴수당이 생기지 않아요: ' + reasons.join(', '), 'w']];
+      if (r.over40) notes2.push(['주 소정근로시간 ' + wonD(r.raw) + '시간 중 40시간만 반영했어요. 넘는 시간은 연장근로수당으로 따로 계산해요.', 'w']);
+      notes2.push(['월 환산은 1년 365일 ÷ 7일 ÷ 12개월(약 4.345주)로 계산했어요.']);
+      notes2.push([ROUNDNOTE]);
       show(pane, { title: '주휴수당 계산 결과', cond: '시급 ' + won(o.hourly) + '원 · 주 ' + wonD(r.raw) + '시간' + (o.weekHOv > 0 ? '' : '(1일 ' + wonD(o.dayH) + '시간 × ' + wonD(o.wdays) + '일)'),
-        sum: [S('주휴시간', wonD(r.ok ? r.holidayH : 0), '시간'), S('1주 주휴수당', won(r.pay), '원', true), S('월 환산 주휴수당', won(r.ok ? r.monthHoliday : 0)), S('월 소정근로시간', r.monthHR, '시간')],
+        sum: [S('주휴시간', wonD(r.ok ? r.holidayH : 0), '시간'), S('1주 주휴수당', won(r.pay), '원', true), S('월 환산 주휴수당', won(r.ok ? r.monthHoliday : 0))],
+        blocks: [{ t: 'table', head: ['항목', '금액'], num: [1], rows: [
+          { c: [['1주 근로 임금', '시급 × ' + wonD(r.weekH) + '시간'], won(r.weekWage)] },
+          { c: [['1주 주휴수당', r.eligibleHours ? '시급 × 주휴 ' + wonD(r.holidayH) + '시간(주 소정 ÷ 40 × 8)' : '주 15시간 미만이라 없음'], won(r.pay)] },
+          { c: ['1주 합계(주급)', won(r.weekTotal)], cls: 'tot' }] }],
+        notes: notes2 });
+    },
+
+    hours: function (pane, o) {
+      var r = C.holidayPay({ hourly: R.minWage[2026], dayH: o.dayH, wdays: o.wdays, weekHOv: o.weekHOv });
+      if (!(r.raw > 0)) return err(pane, '근로시간 계산 결과', '근무시간을 입력해주세요.');
+      var notes = [];
+      if (r.over40) notes.push(['주 ' + wonD(r.raw) + '시간 중 40시간만 소정근로시간으로 봤어요. 넘는 시간은 연장근로예요.', 'w']);
+      if (!r.eligibleHours) notes.push(['주 15시간 미만이라 주휴시간이 없어요(주휴수당·연차 미적용).', 'w']);
+      notes.push(['월 소정근로시간 = (주 소정근로시간 + 주휴시간) × 365 ÷ 7 ÷ 12, 소수점은 반올림했어요.']);
+      show(pane, { title: '근로시간 계산 결과', cond: '주 ' + wonD(r.raw) + '시간' + (o.weekHOv > 0 ? '' : '(1일 ' + wonD(o.dayH) + '시간 × ' + wonD(o.wdays) + '일)'),
+        sum: [S('주 소정근로시간', wonD(r.weekH), '시간'), S('주휴시간', wonD(r.holidayH), '시간'), S('월 소정근로시간', r.monthHR, '시간', true)],
         blocks: [
-          { t: 'table', title: '근로시간', head: ['항목', '시간'], num: [1], rows: [
-            { c: [['주 소정근로시간', r.over40 ? '입력 ' + wonD(r.raw) + '시간 → 최대 40시간' : ''], wonD(r.weekH) + '시간'] },
-            { c: [['주휴시간', r.eligibleHours ? '주 소정근로시간 ÷ 40 × 8' : '주 15시간 미만이라 없음'], wonD(r.holidayH) + '시간'] },
-            { c: [['월 소정근로시간(유급)', '(주 소정 + 주휴) × 365 ÷ 7 ÷ 12 = ' + wonD(r.monthH)], r.monthHR + '시간'], cls: 'tot' }] },
-          { t: 'table', title: '금액', head: ['항목', '금액'], num: [1], rows: [
-            { c: [['1주 근로 임금', '시급 × ' + wonD(r.weekH) + '시간'], won(r.weekWage)] },
-            { c: [['1주 주휴수당', '시급 × 주휴 ' + wonD(r.holidayH) + '시간'], won(r.pay)] },
-            { c: ['1주 합계(주급)', won(r.weekTotal)], cls: 'tot' },
-            { c: [['월 환산 급여', '시급 × 월 소정근로시간 ' + r.monthHR + '시간(주휴 포함)'], won(r.monthWage)] }] }],
+          { t: 'table', head: ['항목', '시간'], num: [1], rows: [
+            { c: [['주 소정근로시간', r.over40 ? '최대 40시간' : ''], wonD(r.weekH) + '시간'] },
+            { c: [['주휴시간', r.eligibleHours ? '주 소정 ÷ 40 × 8' : '주 15시간 미만'], wonD(r.holidayH) + '시간'] },
+            { c: [['주 유급시간', '주 소정 + 주휴'], wonD(r.weekH + r.holidayH) + '시간'] },
+            { c: [['월 소정근로시간(유급)', wonD(r.monthH) + '시간 → 반올림'], r.monthHR + '시간'], cls: 'tot' },
+            { c: [['연간 유급시간', '주 유급시간 × 365 ÷ 7'], wonD(Math.round((r.weekH + r.holidayH) * 365 / 7 * 100) / 100) + '시간'] }] },
+          { t: 'table', title: '이 근로시간의 최저임금 월급', head: ['연도', '최저시급', '월급(최저)'], num: [1, 2], rows: [
+            { c: ['2026년', won(R.minWage[2026]), won(R.minWage[2026] * r.monthHR)] },
+            { c: ['2027년', won(R.minWage[2027]), won(R.minWage[2027] * r.monthHR)] }] }],
         notes: notes });
     },
 
