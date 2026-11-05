@@ -225,11 +225,12 @@
   function averageWage(o) {
     var p = avgSegments(o.lastDay); if (!p) return { error: '마지막 근무일을 입력해주세요.' };
     var wages = o.segAmounts ? o.segAmounts.reduce(function (a, b) { return a + (b || 0); }, 0) : (o.total3 > 0 ? o.total3 : wageInPeriod(o.monthly || 0, p));
-    var add = (o.bonus || 0) * 3 / 12 + (o.leavePay || 0) * 3 / 12;
+    var bm = Math.min(12, Math.max(3, o.bonusMonths || 12)); // 근무 1년 미만이면 근로월수로 나눔
+    var add = (o.bonus || 0) * 3 / bm + (o.leavePay || 0) * 3 / 12;
     var avg = unit((wages + add) / p.days, o.round);
     var ordHour = o.ordinaryMonthly > 0 ? unit(o.ordinaryMonthly / (o.hours || 209), o.round) : 0;
     var ordDay = unit(ordHour * (o.dayHours || 8), o.round);
-    return { period: p, wages: wages, add: add, avg: avg, ordHour: ordHour, ordDay: ordDay, applied: Math.max(avg, ordDay), usedOrdinary: ordDay > avg };
+    return { period: p, wages: wages, add: add, bonusMonths: bm, avg: avg, ordHour: ordHour, ordDay: ordDay, applied: Math.max(avg, ordDay), usedOrdinary: ordDay > avg };
   }
 
   /* ---------- 퇴직소득세 ---------- */
@@ -270,7 +271,7 @@
     var a = D(o.join), b = D(o.lastDay);
     if (!a || !b || b < a) return { error: '입사일과 퇴사일(마지막 근무일)을 확인해주세요.' };
     var days = daysBetween(a, b) - (o.excludeDays || 0);
-    var aw = averageWage(o);
+    var aw = averageWage(Object.assign({}, o, { bonusMonths: Math.min(12, monthsDiff(a, b) + 1) }));
     var pay = floor1(aw.applied * days * 30 / 365);
     var under1y = daysBetween(a, b) < 365;
     var rt = retirementTax(pay, o.join, o.lastDay);

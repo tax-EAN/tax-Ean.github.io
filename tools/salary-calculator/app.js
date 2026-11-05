@@ -383,7 +383,7 @@
       var sumB = p.segs.reduce(function (x, sg, i) { return x + (o['s' + i + 'b'] || 0); }, 0), sumO = p.segs.reduce(function (x, sg, i) { return x + (o['s' + i + 'o'] || 0); }, 0);
       segRows.push({ c: ['3개월 합계', p.days + '일', won(sumB), won(sumO), won(aw.wages)], cls: 'tot' });
       var avgRows = [{ c: ['3개월 임금총액', won(aw.wages)] }];
-      if (o.bonus) avgRows.push({ c: [['상여금 3/12', '1년 ' + won(o.bonus) + ' × 3/12'], won(o.bonus * 3 / 12)] });
+      if (o.bonus) avgRows.push({ c: [['상여금 3/' + aw.bonusMonths, (aw.bonusMonths < 12 ? '근무 ' + aw.bonusMonths + '개월 동안 ' : '1년 ') + won(o.bonus) + ' × 3/' + aw.bonusMonths], won(o.bonus * 3 / aw.bonusMonths)] });
       if (o.leaveP) avgRows.push({ c: [['연차수당 3/12', '1년 ' + won(o.leaveP) + ' × 3/12'], won(o.leaveP * 3 / 12)] });
       avgRows.push({ c: [['1일 평균임금', won(aw.wages + aw.add) + ' ÷ ' + p.days + '일'], wonD(aw.avg)], cls: 'tot' });
       if (ord) avgRows.push({ c: [['1일 통상임금(비교)', won(ord) + ' ÷ 209 × 8'], wonD(aw.ordDay)] });
