@@ -12,126 +12,132 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700;900&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
-/* Layout: 단일 칼럼 안내문. 3대 체크(특약·운행기록부·번호판)를 번호판 모양 칩으로 표시 */
+/* 레이아웃: 세무사무실이 보내는 종이 안내장처럼. 칸막이 카드 없이 여백과 제목으로 구분, 법령 근거는 접어 둠 */
 :root{
-  --bg:#f6f7f5; --paper:#ffffff; --ink:#17201b; --muted:#5b665f; --line:#dde2dd;
-  --navy:#1d3a5f; --navy-soft:#e8eef6;
-  --plate:#a8d65a; --plate-ink:#14240a; --plate-soft:#eef7df;
-  --warn:#b4401f; --warn-soft:#fbece6;
-  --ok:#2c6e3f;
+  --bg:#fafaf8; --paper:#fafaf8; --ink:#1d2024; --muted:#5f646b; --line:#e2e2dc; --soft:#f0f1ec;
+  --accent:#1f5a6e; --accent-soft:#e4eef1;
+  --warn:#b13b1f; --warn-soft:#fbeee9; --ok:#2e6b3c;
+  --plate:#a8d65a; --plate-ink:#14240a;
+  --f-head:"IBM Plex Sans KR","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --f-body:"Noto Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
-  --f-num:"IBM Plex Mono",ui-monospace,"Noto Sans Mono CJK KR",monospace;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#121614; --paper:#1a201d; --ink:#e7ece8; --muted:#9aa59e; --line:#2e3833;
-  --navy:#9cc0ea; --navy-soft:#1c2a3a;
-  --plate:#a8d65a; --plate-ink:#14240a; --plate-soft:#22301a;
-  --warn:#f08b6a; --warn-soft:#3a221b; --ok:#7fc994; color-scheme:dark}}
+  --bg:#151719; --paper:#151719; --ink:#e8e9e6; --muted:#a3a8ad; --line:#2f3337; --soft:#1e2124;
+  --accent:#8cc3d4; --accent-soft:#1b2c32; --warn:#f0906f; --warn-soft:#33201a; --ok:#86c896; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#121614; --paper:#1a201d; --ink:#e7ece8; --muted:#9aa59e; --line:#2e3833;
-  --navy:#9cc0ea; --navy-soft:#1c2a3a;
-  --plate:#a8d65a; --plate-ink:#14240a; --plate-soft:#22301a;
-  --warn:#f08b6a; --warn-soft:#3a221b; --ok:#7fc994; color-scheme:dark}
+  --bg:#151719; --paper:#151719; --ink:#e8e9e6; --muted:#a3a8ad; --line:#2f3337; --soft:#1e2124;
+  --accent:#8cc3d4; --accent-soft:#1b2c32; --warn:#f0906f; --warn-soft:#33201a; --ok:#86c896; color-scheme:dark}
 
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.7;word-break:keep-all;overflow-wrap:break-word}
-.wrap{max-width:760px;margin:0 auto;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
-h1,h2,h3{font-family:"IBM Plex Sans KR",var(--f-body);text-wrap:balance;line-height:1.35;margin:0}
-h1{font-size:clamp(1.6rem,5vw,2.15rem);font-weight:900;letter-spacing:-.02em}
-h2{font-size:1.3rem;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
-h3{font-size:1.05rem;font-weight:700}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.8;word-break:keep-all;overflow-wrap:break-word}
+.wrap{max-width:720px;margin:0 auto;padding-block:32px 72px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{font-family:var(--f-head);text-wrap:balance;line-height:1.4;margin:0}
+h1{font-size:clamp(1.65rem,5.6vw,2.2rem);font-weight:700;letter-spacing:-.02em}
+h2{font-size:1.4rem;font-weight:700;letter-spacing:-.01em;display:flex;align-items:baseline;gap:12px}
+h3{font-size:1.08rem;font-weight:700}
 p{margin:0}
-ul,ol{margin:0;padding-left:1.2em}
-li+li{margin-top:4px}
-.sec{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px 20px;display:flex;flex-direction:column;gap:14px}
-.no{font-family:var(--f-num);font-size:.8rem;color:var(--navy);background:var(--navy-soft);border-radius:6px;padding:2px 7px;flex:none}
-.eyebrow{font-size:.78rem;letter-spacing:.08em;color:var(--muted);font-weight:500}
-.lead{font-size:1.06rem}
-.muted{color:var(--muted)}
-.law{font-size:.78rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;line-height:1.55}
-.law b{font-weight:500;color:var(--ink)}
-.chk{color:var(--warn);font-size:.78em;font-weight:700;white-space:nowrap}
+ul,ol{margin:0;padding-left:1.25em}
+li+li{margin-top:6px}
 strong{font-weight:700}
-.hl{background:linear-gradient(transparent 58%,var(--plate-soft) 58%)}
+.muted{color:var(--muted)}
+.hl{background:none;font-weight:700}
+.chk{color:var(--warn);font-size:.8em;font-weight:700}
 
-/* hero */
-.hero{display:flex;flex-direction:column;gap:14px;padding-block:8px}
-.plates{display:flex;flex-wrap:wrap;gap:10px}
-.plate{display:inline-flex;align-items:center;gap:8px;border:2px solid var(--ink);border-radius:8px;padding:6px 12px;font-weight:700;background:var(--paper);font-size:.95rem}
-.plate .n{font-family:var(--f-num);font-size:.8rem;background:var(--ink);color:var(--paper);border-radius:4px;padding:0 6px}
-.plate.green{background:var(--plate);color:var(--plate-ink);border-color:var(--plate-ink)}
-.plate.green .n{background:var(--plate-ink);color:var(--plate)}
+/* 머리말 */
+.hero{display:flex;flex-direction:column;gap:18px}
+.tolist{font-size:.92rem;color:var(--muted);text-decoration:none;align-self:flex-start}
+.tolist:hover{color:var(--accent)}
+.eyebrow{font-size:.95rem;color:var(--accent);font-weight:700}
+.lead{font-size:1.08rem;color:var(--ink)}
 
-/* boxes */
-.box{border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
-.box.warn{background:var(--warn-soft);border-left:4px solid var(--warn)}
-.box.info{background:var(--navy-soft)}
-.box.green{background:var(--plate-soft)}
-.box-t{font-weight:700}
+/* 세 가지 확인 = 실제 체크리스트 */
+.plates{display:flex;flex-direction:column;gap:0;border-top:2px solid var(--ink)}
+.plate{display:grid;grid-template-columns:30px 1fr;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line);font-weight:700;font-size:1.05rem}
+.plate .n{width:22px;height:22px;border:2px solid var(--ink);border-radius:3px;font-size:0;display:block}
+.plate.green{color:var(--ink)}
+.plate.green::after{content:"";display:none}
 
-/* tables */
-.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:10px}
-table{border-collapse:collapse;width:100%;font-size:.92rem;min-width:520px}
+/* 섹션: 카드 없이 */
+.sec{display:flex;flex-direction:column;gap:16px;scroll-margin-top:16px}
+.no{font-family:var(--f-head);font-weight:700;color:var(--accent);font-size:1.4rem;min-width:1.1em;flex:none}
+.no::after{content:"."}
+
+/* 안내 상자: 두 가지 역할만 */
+.box{padding:16px 18px;display:flex;flex-direction:column;gap:8px;background:var(--soft);border-radius:4px}
+.box.warn{background:var(--warn-soft)}
+.box.warn .box-t{color:var(--warn)}
+.box.info,.box.green{background:var(--accent-soft)}
+.box.green .box-t,.box.info .box-t{color:var(--accent)}
+.box-t{font-weight:700;font-size:1rem}
+
+/* 표 */
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:.95rem;min-width:520px;border-top:2px solid var(--ink)}
 .tw.narrow table{min-width:0}
-th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-th{background:var(--navy-soft);font-weight:700;font-size:.86rem;white-space:nowrap}
-tr:last-child td{border-bottom:0}
-td.num{font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+th,td{padding:11px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:700;font-size:.88rem;color:var(--muted);white-space:nowrap}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .bad{color:var(--warn);font-weight:700}
 .good{color:var(--ok);font-weight:700}
 
-/* steps */
-.steps{list-style:none;padding:0;display:flex;flex-direction:column;gap:10px;counter-reset:s}
-.steps li{display:grid;grid-template-columns:28px 1fr;gap:10px;margin:0}
-.steps li::before{counter-increment:s;content:counter(s);font-family:var(--f-num);width:26px;height:26px;border-radius:50%;background:var(--navy);color:var(--paper);display:grid;place-items:center;font-size:.8rem}
+/* 단계 */
+.steps{list-style:none;padding:0;display:flex;flex-direction:column;gap:12px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:30px 1fr;gap:10px;margin:0}
+.steps li::before{counter-increment:s;content:counter(s);width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--bg);display:grid;place-items:center;font-size:.85rem;font-weight:700;margin-top:2px}
 .steps li>div{min-width:0}
 
-/* calc */
-.calc{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:.9rem;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px 14px;line-height:1.8;overflow-x:auto;white-space:pre}
+/* 계산 예시: 영수증처럼 */
+.calc{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:.92rem;background:var(--soft);border-radius:4px;padding:14px 16px;line-height:1.9;overflow-x:auto;white-space:pre}
 
-/* faq */
-details{border:1px solid var(--line);border-radius:10px;padding:0 14px;background:var(--paper)}
-details+details{margin-top:8px}
-summary{cursor:pointer;padding:12px 0;font-weight:700;list-style:none;display:grid;grid-template-columns:auto 1fr;gap:8px}
-summary::-webkit-details-marker{display:none}
-summary .q{color:var(--navy);font-family:var(--f-num)}
-details[open] summary{border-bottom:1px dashed var(--line)}
-details .a{padding:12px 0 14px;display:flex;flex-direction:column;gap:8px}
-summary:focus-visible{outline:2px solid var(--navy);outline-offset:3px;border-radius:4px}
+/* 자주 묻는 질문: 칸 없이 Q/A */
+.qa{display:flex;flex-direction:column;gap:6px;padding-block:16px;border-bottom:1px solid var(--line)}
+.qa:first-child{padding-top:0}
+.qa:last-child{border-bottom:0}
+.qq{font-size:1.05rem;display:grid;grid-template-columns:auto 1fr;gap:8px}
+.qq .q{color:var(--accent)}
+.qa .a{display:flex;flex-direction:column;gap:8px}
 
-.list-check{list-style:none;padding:0;display:flex;flex-direction:column;gap:8px}
-.list-check li{display:grid;grid-template-columns:22px 1fr;gap:8px;margin:0}
-.list-check li::before{content:"";width:16px;height:16px;border:2px solid var(--navy);border-radius:4px;margin-top:5px}
+/* 체크 목록 */
+.list-check{list-style:none;padding:0;display:flex;flex-direction:column;gap:10px}
+.list-check li{display:grid;grid-template-columns:26px 1fr;gap:8px;margin:0}
+.list-check li::before{content:"";width:18px;height:18px;border:2px solid var(--ink);border-radius:3px;margin-top:6px}
 
-.toc{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px 16px;list-style:none;padding:0;margin:0}
-.toc li{margin:0}
-.toc a{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:baseline;color:var(--ink);text-decoration:none;padding:6px 0;border-bottom:1px solid var(--line)}
-.toc a:hover span:last-child{color:var(--navy);text-decoration:underline}
-.toc .no{font-size:.75rem}
-.back{align-self:flex-end;font-size:.82rem;color:var(--navy);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:3px 12px}
-.back:hover{background:var(--navy-soft)}
-a:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
-html{scroll-behavior:smooth}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
-.sec{scroll-margin-top:16px}
-.tolist{font-size:.88rem;color:var(--navy);text-decoration:none;align-self:flex-start}
-.tolist:hover{text-decoration:underline}
-.dl{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;font-weight:700;font-size:.92rem;color:var(--navy);border:1px solid var(--navy);border-radius:999px;padding:5px 14px;text-decoration:none}
-.dl:hover{background:var(--navy-soft)}
-.foot{font-size:.82rem;color:var(--muted);text-align:center}
+/* 목차 */
+.toc{list-style:none;padding:0;margin:0;columns:2 240px;column-gap:28px}
+.toc li{margin:0;break-inside:avoid}
+.toc a{display:grid;grid-template-columns:1.6em 1fr;gap:6px;color:var(--ink);text-decoration:none;padding:5px 0}
+.toc a:hover span:last-child{color:var(--accent);text-decoration:underline}
+.toc .no{font-size:1rem}
+#toc{gap:10px}
+#toc h2{font-size:1rem;color:var(--muted)}
 
-/* print / PDF */
+/* 법령 근거: 기본은 접힘 */
+details.law{font-size:.85rem;color:var(--muted)}
+details.law summary{cursor:pointer;list-style:none;display:inline-flex;gap:6px;align-items:center;color:var(--muted)}
+details.law summary::-webkit-details-marker{display:none}
+details.law summary::before{content:"+";font-weight:700;width:1em;text-align:center}
+details.law[open] summary::before{content:"–"}
+details.law p{padding:6px 0 0 1.4em;line-height:1.65}
+details.law b{font-weight:500;color:var(--ink)}
+
+.dl{align-self:flex-start;font-weight:700;font-size:.95rem;color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+.notice{font-size:.95rem;border-left:3px solid var(--ink);padding:2px 0 2px 14px;color:var(--ink)}
+.foot{font-size:.88rem;color:var(--muted);border-top:1px solid var(--line);padding-top:18px}
+.top{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);text-decoration:none;font-size:.85rem;font-weight:700;padding:8px 14px;border-radius:999px;opacity:.85}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
 @media print{
-  .tolist,.dl{display:none}
+  .tolist,.dl,.top{display:none}
   body{background:#fff;font-size:10.5pt}
-  .wrap{max-width:none;padding:0;gap:12px}
-  .sec{break-inside:auto;border-color:#ccc}
-  .box,tr,.calc,details{break-inside:avoid}
+  .wrap{max-width:none;padding:0;gap:22px}
+  details.law p{display:block}
+  .box,tr,.calc,.qa{break-inside:avoid}
   h2{break-after:avoid}
-  .tw{overflow:visible}
-  table{min-width:0}
-  .back{display:none}
+  .tw{overflow:visible} table{min-width:0}
 }
 </style>
 </head>
@@ -143,6 +149,7 @@ html{scroll-behavior:smooth}
   <div class="eyebrow">사업자 대표님을 위한 · 법인세 / 종합소득세 신고 대비</div>
   <h1>업무용승용차, 비용으로 인정받으려면 이것만 챙기세요</h1>
   <p class="lead">회사 차량 관련 비용(감가상각비·리스료·유류비·보험료 등)을 세금 계산 때 비용으로 인정받으려면 아래 <strong>세 가지</strong>가 갖춰져 있어야 합니다. 하나라도 빠지면 비용이 깎이거나 전액 부인될 수 있습니다.</p>
+  <p class="notice"><strong>신고하시기 전에 확인해주세요.</strong> 이 안내는 일반적인 내용을 정리한 자료예요. 신고나 홈택스 처리를 하시기 전에, 내 상황에 맞는지 세무사무실에 공유해 확인하신 뒤 진행해주세요.</p>
   <div class="plates" aria-label="세 가지 체크사항">
     <span class="plate"><span class="n">1</span>임직원 전용 보험 특약</span>
     <span class="plate"><span class="n">2</span>운행기록부</span>
@@ -162,22 +169,22 @@ html{scroll-behavior:smooth}
 <nav class="sec" id="toc" aria-label="목차">
   <h2>목차</h2>
   <ol class="toc">
-    <li><a href="#target"><span class="no">01</span><span>어떤 차가 해당되나요?</span></a></li>
-    <li><a href="#insurance"><span class="no">02</span><span>체크 ① 임직원 전용 보험 특약</span></a></li>
-    <li><a href="#logbook"><span class="no">03</span><span>체크 ② 운행기록부</span></a></li>
-    <li><a href="#plate"><span class="no">04</span><span>체크 ③ 법인 연두색 번호판</span></a></li>
-    <li><a href="#limit"><span class="no">05</span><span>비용 한도</span></a></li>
-    <li><a href="#cases"><span class="no">06</span><span>상황별 처리방법</span></a></li>
-    <li><a href="#sale"><span class="no">07</span><span>차량을 팔 때 (세금계산서)</span></a></li>
-    <li><a href="#docs"><span class="no">08</span><span>회사에서 준비할 서류</span></a></li>
-    <li><a href="#faq"><span class="no">09</span><span>자주 묻는 질문</span></a></li>
+    <li><a href="#target"><span class="no">1</span><span>어떤 차가 해당되나요?</span></a></li>
+    <li><a href="#insurance"><span class="no">2</span><span>체크 ① 임직원 전용 보험 특약</span></a></li>
+    <li><a href="#logbook"><span class="no">3</span><span>체크 ② 운행기록부</span></a></li>
+    <li><a href="#plate"><span class="no">4</span><span>체크 ③ 법인 연두색 번호판</span></a></li>
+    <li><a href="#limit"><span class="no">5</span><span>비용 한도</span></a></li>
+    <li><a href="#cases"><span class="no">6</span><span>상황별 처리방법</span></a></li>
+    <li><a href="#sale"><span class="no">7</span><span>차량을 팔 때 (세금계산서)</span></a></li>
+    <li><a href="#docs"><span class="no">8</span><span>회사에서 준비할 서류</span></a></li>
+    <li><a href="#faq"><span class="no">9</span><span>자주 묻는 질문</span></a></li>
     <li><a href="#caution"><span class="no">10</span><span>주의사항 · 기한</span></a></li>
   </ol>
 </nav>
 
 <!-- 1 -->
 <section class="sec" id="target">
-  <h2><span class="no">01</span>어떤 차가 해당되나요?</h2>
+  <h2><span class="no">1</span>어떤 차가 해당되나요?</h2>
   <p>사람을 태우는 <strong>일반 승용차</strong>(8인승 이하)가 대상입니다. 아래 차량은 대상에서 빠집니다.</p>
   <div class="tw">
     <table>
@@ -192,13 +199,12 @@ html{scroll-behavior:smooth}
     </table>
   </div>
   <p class="muted" style="font-size:.9rem">개인사업자는 <strong>복식부기의무자</strong>(일정 매출 이상으로 장부를 복식으로 써야 하는 사업자)일 때 적용됩니다.</p>
-  <p class="law">근거 · <b>법인세법 제27조의2</b>, 같은 법 시행령 제50조의2① / <b>소득세법 제33조의2</b>, 같은 법 시행령 제78조의3① / 개별소비세법 제1조②3호</p>
-  <a class="back" href="#toc">↑ 목차로</a>
+  <details class="law"><summary>법령 근거</summary><p><b>법인세법 제27조의2</b>, 같은 법 시행령 제50조의2① / <b>소득세법 제33조의2</b>, 같은 법 시행령 제78조의3① / 개별소비세법 제1조②3호</p></details>
 </section>
 
 <!-- 2 -->
 <section class="sec" id="insurance">
-  <h2><span class="no">02</span>체크 ① 임직원 전용 보험 특약</h2>
+  <h2><span class="no">2</span>체크 ① 임직원 전용 보험 특약</h2>
   <p>자동차보험의 운전자 범위를 <strong>"임직원 한정"</strong>(보험사 상품명: 임직원 운전자 한정 특약)으로 가입해야 합니다. 운전자 범위가 <strong>"누구나"</strong>나 "가족 한정"이면 요건을 갖추지 못한 것으로 봅니다.</p>
   <div class="tw">
     <table>
@@ -219,13 +225,12 @@ html{scroll-behavior:smooth}
     <li>법인 차량을 업무 외로 쓴 금액은 <strong>사용한 사람의 급여(상여)</strong>로 처리됩니다. 사용자가 불분명하면 <strong>대표자 상여</strong>로 처리되어 대표자 소득세가 늘어납니다.</li>
     <li>30일 이내 단기렌트는 렌트 계약서에 <strong>"임직원 한정 운전" 특약</strong>을 넣으면 보험 특약에 가입한 것으로 봅니다.</li>
   </ul>
-  <p class="law">근거 · 법인: <b>법인세법 시행령 제50조의2④·⑧·⑨</b>, 시행규칙 제27조의2③·⑤ / 소득처분: 법인세법 시행령 제106조①1호 / 개인: <b>소득세법 시행령 제78조의3④·⑤</b> (50% 특례: 같은 항 2호 나목 단서, 2024.1.1.~2025.12.31. 발생분)</p>
-  <a class="back" href="#toc">↑ 목차로</a>
+  <details class="law"><summary>법령 근거</summary><p>법인: <b>법인세법 시행령 제50조의2④·⑧·⑨</b>, 시행규칙 제27조의2③·⑤ / 소득처분: 법인세법 시행령 제106조①1호 / 개인: <b>소득세법 시행령 제78조의3④·⑤</b> (50% 특례: 같은 항 2호 나목 단서, 2024.1.1.~2025.12.31. 발생분)</p></details>
 </section>
 
 <!-- 3 -->
 <section class="sec" id="logbook">
-  <h2><span class="no">03</span>체크 ② 운행기록부</h2>
+  <h2><span class="no">3</span>체크 ② 운행기록부</h2>
   <p>차량 관련 비용이 <strong>1년에 차 1대당 1,500만원</strong>을 넘으면 운행기록부가 있어야 그 이상을 비용으로 인정받을 수 있습니다.</p>
   <div class="tw">
     <table>
@@ -269,13 +274,12 @@ html{scroll-behavior:smooth}
     </table>
   </div>
   <p class="muted" style="font-size:.85rem">※ 사용자는 운전자가 아니라 <strong>차를 이용한 사람</strong>을 적습니다. 같은 사람이 하루에 여러 번 쓰면 주행거리 합계만 적어도 됩니다. 출발지·도착지, 방문 목적을 비고에 남겨두시면 소명할 때 도움이 됩니다.</p>
-  <p class="law">근거 · <b>법인세법 시행령 제50조의2⑤~⑦</b>, 시행규칙 제27조의2④·⑦ / <b>소득세법 시행령 제78조의3⑥·⑦</b> / <b>국세청고시 제2025-8호</b>(업무용승용차 운행기록 방법에 관한 고시, 2025.4.1. 시행) 제2조·제3조</p>
-  <a class="back" href="#toc">↑ 목차로</a>
+  <details class="law"><summary>법령 근거</summary><p><b>법인세법 시행령 제50조의2⑤~⑦</b>, 시행규칙 제27조의2④·⑦ / <b>소득세법 시행령 제78조의3⑥·⑦</b> / <b>국세청고시 제2025-8호</b>(업무용승용차 운행기록 방법에 관한 고시, 2025.4.1. 시행) 제2조·제3조</p></details>
 </section>
 
 <!-- 4 -->
 <section class="sec" id="plate">
-  <h2><span class="no">04</span>체크 ③ 법인 연두색 번호판</h2>
+  <h2><span class="no">4</span>체크 ③ 법인 연두색 번호판</h2>
   <p><strong>법인</strong>이 쓰는 <strong>취득가 8,000만원 이상</strong> 승용차는 연두색 전용번호판을 달아야 합니다. 대상인데 달지 않으면 보험 특약·운행기록부를 갖췄더라도 <strong class="bad">비용이 전액 인정되지 않습니다.</strong></p>
   <div class="tw">
     <table>
@@ -296,13 +300,12 @@ html{scroll-behavior:smooth}
     <div class="box-t">세무사무실에 공유해주세요</div>
     <p>대상 차량은 <strong>번호판이 보이게 차량 사진을 찍어서</strong> 세무사무실에 공유해주세요. 명세서의 "전용번호판 부착 여부" 항목을 작성할 때 확인 자료로 씁니다.</p>
   </div>
-  <p class="law">근거 · <b>법인세법 시행령 제50조의2④ 단서</b>, 시행규칙 제27조의2② / 시행령 부칙(2024.2.29.) 제7조: 2024.1.1. 이후 지출분부터 / 대상·시행시기: 국토교통부고시 제2023-954호(법인업무용 자동차 등록번호판 관련)</p>
-  <a class="back" href="#toc">↑ 목차로</a>
+  <details class="law"><summary>법령 근거</summary><p><b>법인세법 시행령 제50조의2④ 단서</b>, 시행규칙 제27조의2② / 시행령 부칙(2024.2.29.) 제7조: 2024.1.1. 이후 지출분부터 / 대상·시행시기: 국토교통부고시 제2023-954호(법인업무용 자동차 등록번호판 관련)</p></details>
 </section>
 
 <!-- 5 -->
 <section class="sec" id="limit">
-  <h2><span class="no">05</span>비용 한도 (감가상각비·처분손실)</h2>
+  <h2><span class="no">5</span>비용 한도 (감가상각비·처분손실)</h2>
   <p>요건을 다 갖춰도 차값에 해당하는 비용은 <strong>1년에 800만원</strong>까지만 비용으로 처리되고, 넘는 금액은 다음 해 이후로 넘어갑니다.</p>
   <div class="tw">
     <table>
@@ -325,13 +328,12 @@ html{scroll-behavior:smooth}
     </ul>
     <p>→ 감가상각비 한도 <strong>800만원 → 400만원</strong>, 운행기록부 기준 <strong>1,500만원 → 500만원</strong>, 처분손실 한도 <strong>800만원 → 400만원</strong></p>
   </div>
-  <p class="law">근거 · 법인: <b>법인세법 제27조의2③·④·⑤</b>, 같은 법 시행령 제50조의2③·⑩~⑬·⑮, 시행규칙 제27조의2⑥ / 개인: <b>소득세법 제33조의2②·③</b>, 같은 법 시행령 제78조의3③·⑧~⑩ / 한도 축소 법인 요건: <b>법인세법 시행령 제42조②</b> / 중소기업 제외: <b>조세특례제한법 시행령 제2조①5호</b></p>
-  <a class="back" href="#toc">↑ 목차로</a>
+  <details class="law"><summary>법령 근거</summary><p>법인: <b>법인세법 제27조의2③·④·⑤</b>, 같은 법 시행령 제50조의2③·⑩~⑬·⑮, 시행규칙 제27조의2⑥ / 개인: <b>소득세법 제33조의2②·③</b>, 같은 법 시행령 제78조의3③·⑧~⑩ / 한도 축소 법인 요건: <b>법인세법 시행령 제42조②</b> / 중소기업 제외: <b>조세특례제한법 시행령 제2조①5호</b></p></details>
 </section>
 
 <!-- 6 -->
 <section class="sec" id="cases">
-  <h2><span class="no">06</span>상황별 처리방법</h2>
+  <h2><span class="no">6</span>상황별 처리방법</h2>
   <div class="tw">
     <table>
       <thead><tr><th>상황</th><th>결과</th><th>해야 할 일</th></tr></thead>
@@ -345,12 +347,11 @@ html{scroll-behavior:smooth}
       </tbody>
     </table>
   </div>
-  <a class="back" href="#toc">↑ 목차로</a>
 </section>
 
 <!-- 7 -->
 <section class="sec" id="sale">
-  <h2><span class="no">07</span>차량을 팔 때 (세금계산서)</h2>
+  <h2><span class="no">7</span>차량을 팔 때 (세금계산서)</h2>
   <p>업무용으로 쓰던 차량을 팔면 <strong>사업자가 재화를 공급한 것</strong>으로 보아 세금계산서를 발급해야 합니다. 살 때 부가세 매입세액을 돌려받지 못한 승용차여도 팔 때는 발급 대상입니다.</p>
   <div class="tw narrow">
     <table>
@@ -367,12 +368,11 @@ html{scroll-behavior:smooth}
     <li>판 차량의 장부상 금액보다 싸게 팔아 생긴 <strong>처분손실</strong>은 연 800만원까지만 비용 처리됩니다. (05 비용 한도 참고)</li>
     <li>개인사업자가 판 경우 처분이익은 사업소득에 포함됩니다. (복식부기의무자)</li>
   </ul>
-  <p class="law">근거 · 세금계산서: <b>부가가치세법 제9조</b>(재화의 공급), <b>제32조</b>(세금계산서 등), 제34조①·③(발급시기) / 계산서: <b>법인세법 제121조</b>, <b>소득세법 제163조</b> / 개인 처분이익: 소득세법 제19조①20호, 같은 법 시행령 제37조의2 / 겸업 사업자 안분: <b>부가가치세법 제29조⑧</b>, 같은 법 시행령 제63조</p>
-  <a class="back" href="#toc">↑ 목차로</a>
+  <details class="law"><summary>법령 근거</summary><p>세금계산서: <b>부가가치세법 제9조</b>(재화의 공급), <b>제32조</b>(세금계산서 등), 제34조①·③(발급시기) / 계산서: <b>법인세법 제121조</b>, <b>소득세법 제163조</b> / 개인 처분이익: 소득세법 제19조①20호, 같은 법 시행령 제37조의2 / 겸업 사업자 안분: <b>부가가치세법 제29조⑧</b>, 같은 법 시행령 제63조</p></details>
 </section>
 
 <section class="sec" id="docs">
-  <h2><span class="no">08</span>회사에서 준비할 서류</h2>
+  <h2><span class="no">8</span>회사에서 준비할 서류</h2>
   <ul class="list-check">
     <li><div><strong>자동차등록증</strong> · 차량이 있는 경우 모두</div></li>
     <li><div><strong>자동차 계약서</strong> · 구입 계약서 또는 리스·렌트 계약서 (계약기간, 월 납입액, 보험료·자동차세 포함 여부)</div></li>
@@ -384,47 +384,45 @@ html{scroll-behavior:smooth}
   </ul>
   <p>위 자료는 <strong>세무사무실에 공유해주세요.</strong></p>
   <p class="muted" style="font-size:.9rem">위 자료로 신고 때 <strong>업무용승용차 관련비용 명세서</strong>를 작성해 함께 제출합니다.</p>
-  <a class="back" href="#toc">↑ 목차로</a>
 </section>
 
 <!-- 8 FAQ -->
 <section class="sec" id="faq">
-  <h2><span class="no">09</span>자주 묻는 질문</h2>
+  <h2><span class="no">9</span>자주 묻는 질문</h2>
   <div>
-    <details open>
-      <summary><span class="q">Q1</span><span>대표 혼자 타는 차인데도 임직원 특약에 가입해야 하나요?</span></summary>
-      <div class="a"><p>네. 법인 대표이사도 "임원"이라 임직원 특약으로 보장됩니다. 대표 혼자 타더라도 특약이 없으면 법인은 비용이 전액 인정되지 않습니다.</p><p class="law">법인세법 시행령 제50조의2④1호</p></div>
-    </details>
-    <details open>
-      <summary><span class="q">Q2</span><span>보험을 "누구나 운전" 조건으로 들었어요. 어떻게 되나요?</span></summary>
-      <div class="a"><p>법인은 특약이 없는 기간의 비용이 인정되지 않고, 그 금액은 사용자(불분명하면 대표자) 상여로 처리됩니다. 지금 바로 특약으로 바꾸시면 바꾼 날부터 날짜 비율로 인정됩니다.</p><p class="law">법인세법 시행령 제50조의2④2호·⑨, 제106조①1호</p></div>
-    </details>
-    <details open>
-      <summary><span class="q">Q3</span><span>개인사업자인데 차가 2대예요. 2대 모두 특약이 필요한가요?</span></summary>
-      <div class="a"><p>1대는 특약이 없어도 됩니다. 2대째부터는 특약이 있어야 하고, 2026년부터는 특약이 없으면 그 차량 비용은 인정되지 않습니다. 공동사업장은 사업장 전체를 1명으로 보고 1대만 빠집니다.</p><p class="law">소득세법 시행령 제78조의3④2호</p></div>
-    </details>
-    <details open>
-      <summary><span class="q">Q4</span><span>운행기록부를 안 쓰면 비용을 하나도 인정받지 못하나요?</span></summary>
-      <div class="a"><p>아닙니다. 차 1대당 연 1,500만원까지는 운행기록부 없이도 인정됩니다. 1,500만원을 넘는 부분만 인정되지 않습니다.</p><p class="law">법인세법 시행령 제50조의2⑦, 소득세법 시행령 제78조의3⑦</p></div>
-    </details>
-    <details open>
-      <summary><span class="q">Q5</span><span>운행기록부는 세무서에 내야 하나요? 회사 양식으로 써도 되나요?</span></summary>
-      <div class="a"><p>신고 때 내는 서류는 아니지만, 세무서가 요청하면 바로 제출해야 합니다. 양식은 회사 내규에 맞게 만들어도 되며, 차종·등록번호·사용일자·사용자·운행내역만 들어가면 됩니다.</p><p class="law">국세청고시 제2025-8호 제2조, 법인세법 시행령 제50조의2⑥</p></div>
-    </details>
-    <details open>
-      <summary><span class="q">Q6</span><span>출퇴근도 업무용으로 인정되나요?</span></summary>
-      <div class="a"><p>네. 출퇴근(원격지 출퇴근 포함)도 업무용 사용거리에 들어갑니다. 운행기록부에는 출퇴근과 일반 업무를 나눠 적습니다.</p><p class="law">법인세법 시행규칙 제27조의2⑦</p></div>
-    </details>
-    <details open>
-      <summary><span class="q">Q7</span><span>장기렌트나 리스 차량도 똑같이 적용되나요?</span></summary>
-      <div class="a"><p>네. 특약·운행기록부·한도 규정이 모두 똑같이 적용됩니다. 렌트료나 리스료 중 차값에 해당하는 부분(렌트는 70%)에는 연 800만원 한도가 적용됩니다. 렌트사 보험이라도 운전자 범위가 임직원 한정인지 꼭 확인하세요.</p><p class="law">법인세법 시행령 제50조의2⑫, 시행규칙 제27조의2⑥</p></div>
-    </details>
-    <details open>
-      <summary><span class="q">Q8</span><span>2023년에 등록한 1억 원짜리 법인차도 연두색 번호판을 달아야 하나요? 보험 갱신 때 바꿔야 하나요?</span></summary>
-      <div class="a"><p>아닙니다. 연두색 번호판은 <strong>2024년 1월 1일 이후 새로 등록하거나 빌린 차량</strong>부터 의무입니다. 그 전에 등록한 차는 보험을 갱신해도 바꿀 의무가 없고, 원하면 교체할 수 있습니다. 다만 <strong>리스 차량을 인수(승계)해서 법인 명의로 등록</strong>하는 경우에는 연두색 번호판을 달아야 합니다. 이때 8,000만원 기준은 인수 가격이 아니라 <strong>최초 출고가</strong>입니다.</p><p class="law">국토교통부고시 제2023-954호 시행시기 규정, 법인세법 시행령 부칙(2024.2.29.) 제7조</p></div>
-    </details>
+    <div class="qa">
+      <h3 class="qq"><span class="q">Q1</span><span>대표 혼자 타는 차인데도 임직원 특약에 가입해야 하나요?</span></h3>
+      <div class="a"><p>네. 법인 대표이사도 "임원"이라 임직원 특약으로 보장됩니다. 대표 혼자 타더라도 특약이 없으면 법인은 비용이 전액 인정되지 않습니다.</p><details class="law"><summary>법령 근거</summary><p>법인세법 시행령 제50조의2④1호</p></details></div>
+    </div>
+    <div class="qa">
+      <h3 class="qq"><span class="q">Q2</span><span>보험을 "누구나 운전" 조건으로 들었어요. 어떻게 되나요?</span></h3>
+      <div class="a"><p>법인은 특약이 없는 기간의 비용이 인정되지 않고, 그 금액은 사용자(불분명하면 대표자) 상여로 처리됩니다. 지금 바로 특약으로 바꾸시면 바꾼 날부터 날짜 비율로 인정됩니다.</p><details class="law"><summary>법령 근거</summary><p>법인세법 시행령 제50조의2④2호·⑨, 제106조①1호</p></details></div>
+    </div>
+    <div class="qa">
+      <h3 class="qq"><span class="q">Q3</span><span>개인사업자인데 차가 2대예요. 2대 모두 특약이 필요한가요?</span></h3>
+      <div class="a"><p>1대는 특약이 없어도 됩니다. 2대째부터는 특약이 있어야 하고, 2026년부터는 특약이 없으면 그 차량 비용은 인정되지 않습니다. 공동사업장은 사업장 전체를 1명으로 보고 1대만 빠집니다.</p><details class="law"><summary>법령 근거</summary><p>소득세법 시행령 제78조의3④2호</p></details></div>
+    </div>
+    <div class="qa">
+      <h3 class="qq"><span class="q">Q4</span><span>운행기록부를 안 쓰면 비용을 하나도 인정받지 못하나요?</span></h3>
+      <div class="a"><p>아닙니다. 차 1대당 연 1,500만원까지는 운행기록부 없이도 인정됩니다. 1,500만원을 넘는 부분만 인정되지 않습니다.</p><details class="law"><summary>법령 근거</summary><p>법인세법 시행령 제50조의2⑦, 소득세법 시행령 제78조의3⑦</p></details></div>
+    </div>
+    <div class="qa">
+      <h3 class="qq"><span class="q">Q5</span><span>운행기록부는 세무서에 내야 하나요? 회사 양식으로 써도 되나요?</span></h3>
+      <div class="a"><p>신고 때 내는 서류는 아니지만, 세무서가 요청하면 바로 제출해야 합니다. 양식은 회사 내규에 맞게 만들어도 되며, 차종·등록번호·사용일자·사용자·운행내역만 들어가면 됩니다.</p><details class="law"><summary>법령 근거</summary><p>국세청고시 제2025-8호 제2조, 법인세법 시행령 제50조의2⑥</p></details></div>
+    </div>
+    <div class="qa">
+      <h3 class="qq"><span class="q">Q6</span><span>출퇴근도 업무용으로 인정되나요?</span></h3>
+      <div class="a"><p>네. 출퇴근(원격지 출퇴근 포함)도 업무용 사용거리에 들어갑니다. 운행기록부에는 출퇴근과 일반 업무를 나눠 적습니다.</p><details class="law"><summary>법령 근거</summary><p>법인세법 시행규칙 제27조의2⑦</p></details></div>
+    </div>
+    <div class="qa">
+      <h3 class="qq"><span class="q">Q7</span><span>장기렌트나 리스 차량도 똑같이 적용되나요?</span></h3>
+      <div class="a"><p>네. 특약·운행기록부·한도 규정이 모두 똑같이 적용됩니다. 렌트료나 리스료 중 차값에 해당하는 부분(렌트는 70%)에는 연 800만원 한도가 적용됩니다. 렌트사 보험이라도 운전자 범위가 임직원 한정인지 꼭 확인하세요.</p><details class="law"><summary>법령 근거</summary><p>법인세법 시행령 제50조의2⑫, 시행규칙 제27조의2⑥</p></details></div>
+    </div>
+    <div class="qa">
+      <h3 class="qq"><span class="q">Q8</span><span>2023년에 등록한 1억 원짜리 법인차도 연두색 번호판을 달아야 하나요? 보험 갱신 때 바꿔야 하나요?</span></h3>
+      <div class="a"><p>아닙니다. 연두색 번호판은 <strong>2024년 1월 1일 이후 새로 등록하거나 빌린 차량</strong>부터 의무입니다. 그 전에 등록한 차는 보험을 갱신해도 바꿀 의무가 없고, 원하면 교체할 수 있습니다. 다만 <strong>리스 차량을 인수(승계)해서 법인 명의로 등록</strong>하는 경우에는 연두색 번호판을 달아야 합니다. 이때 8,000만원 기준은 인수 가격이 아니라 <strong>최초 출고가</strong>입니다.</p><details class="law"><summary>법령 근거</summary><p>국토교통부고시 제2023-954호 시행시기 규정, 법인세법 시행령 부칙(2024.2.29.) 제7조</p></details></div>
+    </div>
   </div>
-  <a class="back" href="#toc">↑ 목차로</a>
 </section>
 
 <!-- 9 -->
@@ -438,12 +436,12 @@ html{scroll-behavior:smooth}
       <li>운행기록은 연말에 한꺼번에 몰아 쓰지 말고 <strong>그때그때</strong> 작성하세요. 주유·통행료·카드내역과 맞지 않으면 인정받기 어렵습니다.</li>
     </ul>
   </div>
-  <p class="law">근거 · 가산세: <b>법인세법 제74조의2</b>, <b>소득세법 제81조의14</b> / 명세서 제출: 법인세법 시행령 제50조의2⑭, 소득세법 시행령 제78조의3⑪</p>
-  <a class="back" href="#toc">↑ 목차로</a>
+  <details class="law"><summary>법령 근거</summary><p>가산세: <b>법인세법 제74조의2</b>, <b>소득세법 제81조의14</b> / 명세서 제출: 법인세법 시행령 제50조의2⑭, 소득세법 시행령 제78조의3⑪</p></details>
 </section>
 
-<p class="foot">2026년 11월 기준으로 작성했습니다. 이후 세법 개정에 따라 내용이 달라질 수 있습니다.</p>
+<p class="foot">2026년 11월 기준으로 작성했습니다. 이후 세법 개정이나 홈택스 화면 변경으로 내용이 달라질 수 있어요. 신고하시기 전에는 모든 내용을 세무사무실과 확인하신 뒤 진행해주세요.</p>
 </div>
-
+<a class="top" href="#toc">목차</a>
+<script>addEventListener('beforeprint',function(){document.querySelectorAll('details').forEach(function(d){d.open=true})})</script>
 </body>
 </html>
