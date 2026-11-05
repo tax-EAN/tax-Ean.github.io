@@ -8,6 +8,9 @@
 - `guides/<영문-슬러그>/index.html` : 가이드 한 편. 주소는 `https://tax-ean.github.io/guides/<슬러그>/`
 - `guides/<슬러그>/img/` : 캡처 이미지(있을 때만)
 - `guides/<슬러그>/<제목>_<YYYY.MM>.pdf` : 같은 내용의 PDF(있을 때만)
+- `tools/salary-calculator/` : 급여·노무 계산기(탭 12개, 목록 페이지 "계산기" 그룹 카드는 `#탭이름`으로 연결)
+  - `calc.js` 맨 위 `RATES`·`INDUSTRY`에 요율이 모여 있다. 매년 1월(4대보험·산재·최저임금)과 7월(국민연금 상·하한)에 이 값과 화면의 기준 문구를 함께 고친다.
+  - `taxtable-2026.js` : 근로소득 간이세액표(소득세법 시행령 별표2, 2026.3.1 시행분). 간이세액표가 바뀌면 국세청 엑셀로 다시 만든다.
 
 ## 새 가이드를 올릴 때
 1. 가이드 HTML은 `<!doctype html>`부터 갖춘 독립 페이지로 만든다. `<title>`, `description`, `og:title`, `og:description` 메타를 넣는다.
