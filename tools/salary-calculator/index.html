@@ -255,7 +255,9 @@ dialog.imgdlg::backdrop{background:rgba(0,0,0,.45)}
     <div class="grp">노무</div>
     <ul>
       <li><a href="#ord" data-tab="ord">통상임금</a></li>
+      <li><a href="#hol" data-tab="hol">주휴수당 · 근로시간<small>주·월 소정근로시간 함께</small></a></li>
       <li><a href="#sev" data-tab="sev">평균임금 · 퇴직금</a></li>
+      <li><a href="#annual" data-tab="annual">연차 발생일수</a></li>
       <li><a href="#leave" data-tab="leave">연차수당</a></li>
       <li><a href="#prorate" data-tab="prorate">일할계산</a></li>
       <li><a href="#ot" data-tab="ot">연장·야간·휴일수당</a></li>
@@ -447,6 +449,43 @@ dialog.imgdlg::backdrop{background:rgba(0,0,0,.45)}
   <details class="law"><summary>법령 근거</summary><p><b>근로기준법 시행령 제6조</b> 통상임금 · 대법원 2024. 12. 19. 선고 2020다247190 전원합의체 판결</p></details>
 </section>
 
+<!-- 주휴수당 -->
+<section class="pane" id="hol" data-title="주휴수당 계산" hidden>
+  <div class="pane-head"><h2>주휴수당 · 근로시간 계산</h2><p>시급제·단시간 근로자에게 주는 주휴수당과 주·월 소정근로시간을 계산해요. 주 소정근로시간은 최대 40시간까지 반영해요.</p></div>
+  <div class="cols">
+    <div class="form">
+      <div class="fs"><h3>시급과 근무시간</h3>
+        <label class="f"><span>시급</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="hourly" value="10320"><em>원</em></div><small>2026년 최저시급 10,320원</small></label>
+        <div class="g2">
+          <label class="f"><span>1일 소정근로시간</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="dayH" value="8"><em>시간</em></div></label>
+          <label class="f"><span>주 근무일수</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="wdays" value="5"><em>일</em></div></label>
+          <label class="f full"><span>주 소정근로시간(직접 입력)</span><div class="in"><input type="text" inputmode="decimal" class="dec" data-k="weekHOv"><em>시간</em></div><small>요일마다 근무시간이 다르면 한 주 합계를 넣어주세요. 비워두면 1일 시간 × 주 근무일수로 계산해요.</small></label>
+        </div>
+      </div>
+      <div class="fs"><h3>주휴수당 요건</h3>
+        <label class="chk"><input type="checkbox" data-k="att" checked>그 주에 정해진 근무일을 모두 출근했어요(개근)</label>
+        <label class="chk"><input type="checkbox" data-k="cont" checked>다음 주에도 계속 근무해요(그 주에 퇴사하지 않아요)</label>
+      </div>
+    </div>
+    <div class="result" data-out></div>
+  </div>
+  <div class="box info">
+    <p class="box-t">월급제 근로자는 주휴수당을 따로 주지 않아요</p>
+    <p>월급제 근로자는 매월 받는 월급여 안에 유급 주휴수당이 이미 포함되어 있으므로, 원칙적으로 월급 외에 주휴수당을 별도로 지급받지 않습니다. 주 40시간 근무하는 월급제의 월 소정근로시간 209시간에도 주휴시간이 들어 있어요.</p>
+  </div>
+  <div class="box warn">
+    <p class="box-t">주휴수당이 생기는 요건</p>
+    <ul>
+      <li>4주 평균 <b>1주 소정근로시간이 15시간 이상</b>이어야 해요. 15시간 미만(초단시간 근로자)은 주휴수당과 연차가 없어요.</li>
+      <li>그 주에 정해진 근무일을 <b>모두 출근(개근)</b>해야 해요. 지각·조퇴는 결근이 아니지만, 결근한 날이 있으면 그 주 주휴수당은 없어요.</li>
+      <li>한 주 근무를 마치고 그 주에 퇴사해 <b>다음 날부터 근로관계가 없으면</b> 마지막 주 주휴수당은 생기지 않는다는 것이 고용노동부 해석이에요.</li>
+      <li>주휴수당은 <b>상시 5인 미만 사업장에도</b> 적용돼요.</li>
+      <li>주휴시간 = 주 소정근로시간 ÷ 40 × 8시간(최대 8시간). 40시간을 넘는 시간은 연장근로라 주휴 계산에 넣지 않아요.</li>
+    </ul>
+  </div>
+  <details class="law"><summary>법령 근거</summary><p><b>근로기준법 제55조제1항</b> 1주 평균 1회 이상 유급휴일 · <b>근로기준법 시행령 제30조제1항</b> 1주 소정근로일 개근 시 유급휴일 · <b>근로기준법 제18조제3항</b> 4주 평균 1주 15시간 미만 근로자는 제55조·제60조 미적용 · <b>근로기준법 시행령 별표1</b> 상시 4명 이하 사업장에도 제55조제1항 적용</p></details>
+</section>
+
 <!-- 평균임금·퇴직금 -->
 <section class="pane" id="sev" data-title="평균임금·퇴직금 계산" hidden>
   <div class="pane-head"><h2>평균임금 · 퇴직금 계산</h2><p>퇴직 전 3개월 동안 받은 임금으로 1일 평균임금을 구하고, 퇴직금과 떼야 할 퇴직소득세까지 계산해요.</p></div>
@@ -491,6 +530,35 @@ dialog.imgdlg::backdrop{background:rgba(0,0,0,.45)}
     </ul>
   </div>
   <details class="law"><summary>법령 근거</summary><p><b>근로기준법 제2조제1항제6호</b> 평균임금 · <b>제2조제2항</b> 평균임금이 통상임금보다 적으면 통상임금을 평균임금으로 함 · <b>근로자퇴직급여 보장법 제4조</b> 퇴직급여제도(1년 미만·주 15시간 미만 제외) · <b>제8조</b> 계속근로기간 1년에 30일분 이상의 평균임금 · <b>제9조</b> 퇴직일부터 14일 이내 지급 · <b>소득세법 제48조</b> 퇴직소득공제 · <b>제55조제2항</b> 퇴직소득 산출세액</p></details>
+</section>
+
+<!-- 연차 발생일수 -->
+<section class="pane" id="annual" data-title="연차 발생일수 계산" hidden>
+  <div class="pane-head"><h2>연차 발생일수 계산</h2><p>입사일을 넣으면 언제 연차가 몇 일 생기고 언제까지 써야 하는지 보여드려요. 출근율 80% 이상, 매월 개근을 가정해요.</p></div>
+  <div class="cols">
+    <div class="form"><div class="fs"><h3>입력</h3>
+      <div class="f"><span>연차 계산 기준</span>
+        <div class="seg"><label><input type="radio" name="al-basis" data-k="basis" value="join" checked>입사일 기준<br><small>입사일마다 발생</small></label><label><input type="radio" name="al-basis" data-k="basis" value="fiscal">회계연도 기준<br><small>매년 1월 1일 발생</small></label></div>
+      </div>
+      <div class="g2">
+        <label class="f"><span>입사일</span><input type="date" data-k="join" value="2024-07-01"></label>
+        <label class="f"><span>계산 기준일</span><input type="date" data-k="asof"><small>비워두면 오늘</small></label>
+      </div>
+    </div></div>
+    <div class="result" data-out></div>
+  </div>
+  <div class="box warn">
+    <p class="box-t">연차 계산 전 확인해주세요</p>
+    <ul>
+      <li>연차는 <b>상시 5인 이상 사업장</b>에 적용되고, 4주 평균 주 15시간 미만 근로자에게는 없어요.</li>
+      <li>입사 첫해에는 1개월 개근할 때마다 1일씩, 최대 11일이 생기고 입사 1년이 되는 날 전까지 써야 해요.</li>
+      <li>1년간 80% 이상 출근하면 15일이 생기고, 3년 이상 근무하면 최초 1년을 넘는 매 2년마다 1일씩 더해 최대 25일까지 늘어요.</li>
+      <li>연차는 1년 근무를 마친 <b>다음 날</b> 생겨요. 1년 계약직이 계약기간 1년을 채우고 바로 퇴사하면 15일은 생기지 않고 최대 11일이에요.</li>
+      <li>회계연도 기준으로 운영해도 퇴사할 때 입사일 기준으로 계산한 것보다 적으면 그 차이를 정산해줘야 해요.</li>
+      <li>육아휴직 기간, 육아기·임신기 근로시간 단축으로 줄어든 시간은 출근한 것으로 봐요.</li>
+    </ul>
+  </div>
+  <details class="law"><summary>법령 근거</summary><p><b>근로기준법 제60조</b> 연차 유급휴가(제1항 15일, 제2항 1년 미만 1개월 개근 시 1일, 제4항 가산휴가 최대 25일, 제6항 출근 간주 기간, 제7항 사용기간) · <b>제18조제3항</b> 주 15시간 미만 근로자 미적용 · <b>근로기준법 시행령 별표1</b> 상시 4명 이하 사업장 미적용 · 대법원 2021. 10. 14. 선고 2021다227100 판결(1년 기간제 근로자 연차 최대 11일)</p></details>
 </section>
 
 <!-- 연차수당 -->
@@ -638,8 +706,8 @@ dialog.imgdlg::backdrop{background:rgba(0,0,0,.45)}
   </div>
 </dialog>
 <div class="toast" role="status" aria-live="polite"></div>
-<script src="taxtable-2026.js?v=202611051336"></script>
-<script src="calc.js?v=202611051336"></script>
-<script src="app.js?v=202611051336"></script>
+<script src="taxtable-2026.js?v=202611051347"></script>
+<script src="calc.js?v=202611051347"></script>
+<script src="app.js?v=202611051347"></script>
 </body>
 </html>

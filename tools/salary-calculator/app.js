@@ -365,6 +365,53 @@
         notes: notes });
     },
 
+    hol: function (pane, o) {
+      if (!(o.hourly > 0)) return err(pane, '주휴수당 계산 결과', '시급을 입력해주세요.');
+      var r = C.holidayPay({ hourly: o.hourly, dayH: o.dayH, wdays: o.wdays, weekHOv: o.weekHOv, attended: o.att, continuing: o.cont });
+      if (!(r.raw > 0)) return err(pane, '주휴수당 계산 결과', '근무시간을 입력해주세요.');
+      var reasons = [];
+      if (!r.eligibleHours) reasons.push('주 소정근로시간이 15시간 미만');
+      if (!o.att) reasons.push('개근하지 않음');
+      if (!o.cont) reasons.push('그 주에 퇴사');
+      var notes = [];
+      notes.push(r.ok ? ['주휴수당 요건을 갖췄어요.', 'ok'] : ['주휴수당이 생기지 않아요: ' + reasons.join(', '), 'w']);
+      if (r.over40) notes.push(['주 소정근로시간 ' + wonD(r.raw) + '시간 중 40시간만 반영했어요. 넘는 시간은 연장근로수당으로 따로 계산해요.', 'w']);
+      notes.push(['월 환산은 1년 365일 ÷ 7일 ÷ 12개월(약 4.345주)로 계산했어요.']);
+      notes.push([ROUNDNOTE]);
+      show(pane, { title: '주휴수당 계산 결과', cond: '시급 ' + won(o.hourly) + '원 · 주 ' + wonD(r.raw) + '시간' + (o.weekHOv > 0 ? '' : '(1일 ' + wonD(o.dayH) + '시간 × ' + wonD(o.wdays) + '일)'),
+        sum: [S('주휴시간', wonD(r.ok ? r.holidayH : 0), '시간'), S('1주 주휴수당', won(r.pay), '원', true), S('월 환산 주휴수당', won(r.ok ? r.monthHoliday : 0)), S('월 소정근로시간', r.monthHR, '시간')],
+        blocks: [
+          { t: 'table', title: '근로시간', head: ['항목', '시간'], num: [1], rows: [
+            { c: [['주 소정근로시간', r.over40 ? '입력 ' + wonD(r.raw) + '시간 → 최대 40시간' : ''], wonD(r.weekH) + '시간'] },
+            { c: [['주휴시간', r.eligibleHours ? '주 소정근로시간 ÷ 40 × 8' : '주 15시간 미만이라 없음'], wonD(r.holidayH) + '시간'] },
+            { c: [['월 소정근로시간(유급)', '(주 소정 + 주휴) × 365 ÷ 7 ÷ 12 = ' + wonD(r.monthH)], r.monthHR + '시간'], cls: 'tot' }] },
+          { t: 'table', title: '금액', head: ['항목', '금액'], num: [1], rows: [
+            { c: [['1주 근로 임금', '시급 × ' + wonD(r.weekH) + '시간'], won(r.weekWage)] },
+            { c: [['1주 주휴수당', '시급 × 주휴 ' + wonD(r.holidayH) + '시간'], won(r.pay)] },
+            { c: ['1주 합계(주급)', won(r.weekTotal)], cls: 'tot' },
+            { c: [['월 환산 급여', '시급 × 월 소정근로시간 ' + r.monthHR + '시간(주휴 포함)'], won(r.monthWage)] }] }],
+        notes: notes });
+    },
+
+    annual: function (pane, o) {
+      var asof = o.asof || C.ymd(new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())));
+      var r = C.annualLeave(o.join, asof, o.basis);
+      if (r.error) return err(pane, '연차 발생일수 계산 결과', r.error);
+      var ST = { active: '사용 가능', expired: '기간 지남', future: '발생 예정' };
+      var rows = r.rows.filter(function (x) { return x.status !== 'future' || x === r.next; }).map(function (x) {
+        return { c: [[x.kind, x.note], C.ymd(x.when), wonD(x.days) + '일', C.ymd(x.until), ST[x.status]], cls: x.status === 'active' ? 'hl' : '' };
+      });
+      var notes = [];
+      if (C.D(o.join) < C.D('2017-05-30')) notes.push(['2017년 5월 29일 이전 입사자는 1년 미만 연차를 1년차 연차에서 빼던 옛 규정이 적용될 수 있어요. 세무사무실이나 노무 사무실에 확인해주세요.', 'w']);
+      if (o.basis === 'fiscal') notes.push(['입사 연도 비례 연차는 소수점까지 표시했어요. 소수점은 회사 규정에 따르되, 근로자에게 유리하게 올려 주는 경우가 많아요.']);
+      notes.push(['표의 "사용 기한"까지 쓰지 않은 연차는 회사가 사용 촉진을 하지 않았다면 연차수당으로 정산해요.']);
+      notes.push(['실제로 사용한 연차는 빼지 않았어요.']);
+      show(pane, { title: '연차 발생일수 계산 결과', cond: o.join + ' 입사 · ' + asof + ' 기준 · ' + (o.basis === 'fiscal' ? '회계연도(1월 1일) 기준' : '입사일 기준'),
+        sum: [S('근무일수', won(r.workDays), '일'), S('근속', r.years + '년 ' + r.months, '개월'), S('지금 사용 가능한 연차', wonD(r.active), '일', true), S('다음 발생', r.next ? C.ymd(r.next.when).slice(2).replace(/-/g, '.') : '-', r.next ? ' ' + wonD(r.next.days) + '일' : '')],
+        blocks: [{ t: 'table', title: '연차 발생표', head: ['구분', '발생일', '일수', '사용 기한', '상태'], num: [2], rows: rows }],
+        notes: notes });
+    },
+
     ord: function (pane, o) {
       var dayH = o.dayH || 8, wdays = o.wdays || 5, weekH = dayH * wdays;
       var holiday = weekH >= 15 ? Math.min(8, weekH / 40 * 8) : 0;

@@ -170,6 +170,56 @@
     return etc(minSearch(125001, 10000000000, function (g) { return etc(g).net >= net; }));
   }
 
+  /* ---------- 주휴수당 ---------- */
+  // o: {hourly, dayH, wdays, weekHOv, attended, continuing}
+  function holidayPay(o) {
+    var raw = o.weekHOv > 0 ? +o.weekHOv : (o.dayH || 0) * (o.wdays || 0);
+    var weekH = Math.min(40, raw);                       // 주 소정근로시간은 최대 40시간
+    var eligibleHours = raw >= 15;
+    var ok = eligibleHours && o.attended !== false && o.continuing !== false;
+    var hH = eligibleHours ? weekH / 40 * 8 : 0;           // 주휴시간(최대 8시간)
+    var pay = ok ? Math.floor(o.hourly * hH + EPS) : 0;
+    var monthH = Math.round((weekH + hH) * 365 / 7 / 12 * 100) / 100;
+    return { raw: raw, weekH: weekH, over40: raw > 40, eligibleHours: eligibleHours, ok: ok, holidayH: hH, pay: pay,
+      weekWage: Math.floor(o.hourly * weekH + EPS), weekTotal: Math.floor(o.hourly * weekH + EPS) + pay,
+      monthHoliday: Math.floor(o.hourly * hH * 365 / 7 / 12 + EPS), monthH: monthH, monthHR: Math.round(monthH),
+      monthWage: Math.floor(o.hourly * Math.round(monthH) + EPS) };
+  }
+
+  /* ---------- 연차 발생 ---------- */
+  // basis: 'join'(입사일 기준) | 'fiscal'(회계연도 1월 1일 기준)
+  function annualLeave(join, asOf, basis) {
+    var a = D(join), t = D(asOf); if (!a || !t || t < a) return { error: '입사일과 기준일을 확인해주세요.' };
+    var rows = [], y1 = addMonths(a, 12);                 // 입사 1주년
+    for (var m = 1; m <= 11; m++) {                        // 1년 미만: 1개월 개근마다 1일
+      var g = addMonths(a, m);
+      rows.push({ kind: '1년 미만(1개월 개근)', when: g, days: 1, until: addDays(y1, -1), note: m + '개월째' });
+    }
+    if (basis === 'fiscal') {
+      var jy = a.getUTCFullYear(), firstJan = new Date(Date.UTC(jy + 1, 0, 1));
+      var dJoinYear = daysBetween(a, new Date(Date.UTC(jy, 11, 31)));
+      var yearDays = daysBetween(new Date(Date.UTC(jy, 0, 1)), new Date(Date.UTC(jy, 11, 31)));
+      var prop = Math.round(15 * dJoinYear / yearDays * 100) / 100;
+      rows.push({ kind: '입사 연도 비례 연차', when: firstJan, days: prop, until: new Date(Date.UTC(jy + 1, 11, 31)), note: '15일 × ' + dJoinYear + '/' + yearDays + '일' });
+      for (var y = jy + 2; y <= t.getUTCFullYear() + 1; y++) {
+        var n = y - jy - 1, days = Math.min(25, 15 + Math.floor((n - 1) / 2));
+        rows.push({ kind: '연차', when: new Date(Date.UTC(y, 0, 1)), days: days, until: new Date(Date.UTC(y, 11, 31)), note: '회계연도 ' + n + '년차' + (days > 15 ? ' (가산 ' + (days - 15) + '일)' : '') });
+      }
+    } else {
+      for (var k = 1; ; k++) {
+        var gd = addMonths(a, 12 * k); if (gd > addMonths(t, 12)) break;
+        var dd = Math.min(25, 15 + Math.floor((k - 1) / 2));
+        rows.push({ kind: '연차', when: gd, days: dd, until: addDays(addMonths(a, 12 * (k + 1)), -1), note: '근속 ' + k + '년' + (dd > 15 ? ' (가산 ' + (dd - 15) + '일)' : '') });
+      }
+    }
+    rows.sort(function (x, y) { return x.when - y.when; });
+    rows.forEach(function (r) { r.status = r.when > t ? 'future' : (r.until < t ? 'expired' : 'active'); });
+    var active = rows.filter(function (r) { return r.status === 'active'; }).reduce(function (s, r) { return s + r.days; }, 0);
+    var next = rows.filter(function (r) { return r.status === 'future'; })[0];
+    var mm = monthsDiff(a, t);
+    return { rows: rows, active: Math.round(active * 100) / 100, next: next, workDays: daysBetween(a, t), years: Math.floor(mm / 12), months: mm % 12 };
+  }
+
   /* ---------- 날짜 ---------- */
   function D(s) { if (!s) return null; var p = String(s).split('-'); if (p.length < 3) return null; var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])); return isNaN(d) ? null : d; }
   function ymd(d) { return d.toISOString().slice(0, 10); }
@@ -318,7 +368,7 @@
     RATES: RATES, INDUSTRY: INDUSTRY, floor10: floor10, unit: unit,
     tableTax: tableTax, incomeTax: incomeTax, kidDeduction: kidDeduction, nontaxSplit: nontaxSplit,
     salary: salary, salaryReverse: salaryReverse, daily: daily, dailyReverse: dailyReverse,
-    biz: biz, bizReverse: bizReverse, etc: etc, etcReverse: etcReverse, prorate: prorate, monthlyHours: monthlyHours,
+    biz: biz, bizReverse: bizReverse, etc: etc, etcReverse: etcReverse, holidayPay: holidayPay, annualLeave: annualLeave, prorate: prorate, monthlyHours: monthlyHours,
     averageWage: averageWage, avgSegments: avgSegments, wageInPeriod: wageInPeriod, monthsDiff: monthsDiff, retirementTax: retirementTax, severance: severance,
     leavePay: leavePay, overtime: overtime, OT: OT, D: D, ymd: ymd, daysBetween: daysBetween
   };
