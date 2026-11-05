@@ -316,8 +316,9 @@
       if (!days) return err(pane, '일용직 계산 결과', '근무한 날을 하루 이상 골라주세요.');
       var opt = { days: days, noEI: o.o65 };
       var wage = o.mode === 'net' ? C.dailyReverse({ days: 1, noEI: o.o65 }, o.amount).wage : o.amount; // 1일 기준으로 일당을 정하고
-      var d = C.daily(Object.assign({ wage: wage }, opt)); // 근무일수만큼 합계
-      var one = C.daily({ wage: d.wage, days: 1, noEI: o.o65 });
+      var one = C.daily({ wage: wage, days: 1, noEI: o.o65 });
+      var d = o.pay === 'lump' ? C.daily(Object.assign({ wage: wage }, opt)) // 여러 날을 한 번에 지급
+        : { wage: wage, days: days, total: one.total * days, ei: one.ei * days, tax: one.tax * days, local: one.local * days, small: one.small, ded: one.ded * days, net: one.net * days }; // 매일 지급
       var blocks = [{ t: 'table', title: '공제 내역', head: ['항목', '1일 기준', days + '일 합계'], num: [1, 2], rows: [
         { c: ['세전 일당 / 지급총액', won(one.total), won(d.total)] },
         { c: [['고용보험', o.o65 ? '65세 이상 제외' : '0.9%'], won(one.ei), won(d.ei)] },
@@ -327,11 +328,12 @@
         { c: ['실지급액', won(one.net), won(d.net)], cls: 'tot' }] }];
       if (picked) blocks.push({ t: 'text', text: '근무일(' + days + '일): ' + picked.map(function (x) { return md(x) + '(' + WD[x.getUTCDay()] + ')'; }).join(', ') });
       var notes = [];
-      if (d.small) notes.push(['소득세가 1천원 미만이라 떼지 않았어요(소액부징수).']);
-      notes.push(['소득세는 지급하는 날 기준으로, 이번에 지급하는 금액 전체로 1천원 미만인지 판단해요.']);
-      notes.push(['국민연금·건강보험은 넣지 않았어요. 아래 일용직 참고사항을 확인해주세요.', 'w']);
+      if (d.small) notes.push([o.pay === 'lump' ? '소득세가 1천원 미만이라 떼지 않았어요(소액부징수).' : '하루 소득세가 1천원 미만이라 떼지 않았어요(소액부징수).']);
+      notes.push([o.pay === 'lump' ? '여러 날 일당을 한 번에 지급하는 것으로 계산했어요. 소득세 1천원 미만 여부도 지급액 전체로 판단해요.' : '일당을 매일 지급하는 것으로 계산했어요. 하루 소득세가 1천원 미만(일당 약 187,000원 이하)이면 떼지 않아요.']);
+      if (days >= 8 || d.total >= 2200000) notes.push(['한 달 8일 이상 또는 220만원 이상이에요. 국민연금·건강보험 가입 대상인지 꼭 확인하고 지급하세요.', 'w']);
+      else notes.push(['국민연금·건강보험은 넣지 않았어요. 한 달 8일·60시간·220만원 이상이면 가입 대상인지 꼭 확인하고 지급하세요.', 'w']);
       notes.push([ROUNDNOTE]);
-      show(pane, { title: '일용직 계산 결과', cond: (o.ws && o.we ? '근무 ' + o.ws + ' ~ ' + o.we + ' · ' : '') + days + '일' + (o.o65 ? ' · 65세 이상' : '') + ' · ' + (o.mode === 'net' ? '1일 실지급액 ' + won(o.amount) + '원 기준' : '세전 일당 ' + won(o.amount) + '원 기준'),
+      show(pane, { title: '일용직 계산 결과', cond: (o.ws && o.we ? '근무 ' + o.ws + ' ~ ' + o.we + ' · ' : '') + days + '일' + (o.o65 ? ' · 65세 이상' : '') + (o.pay === 'lump' ? ' · 한 번에 지급' : ' · 매일 지급') + ' · ' + (o.mode === 'net' ? '1일 실지급액 ' + won(o.amount) + '원 기준' : '세전 일당 ' + won(o.amount) + '원 기준'),
         sum: [S('세전 일당', won(d.wage), '원', o.mode === 'net'), S('근무일수', days, '일'), S('1일 실지급액', won(one.net), '원', o.mode !== 'net'), S(days + '일 실지급액', won(d.net))], blocks: blocks, notes: notes });
     },
 
