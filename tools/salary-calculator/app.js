@@ -382,41 +382,52 @@
     },
 
     dins: function (pane, o) {
-      setLabel(pane, 'npq', o.kind === 'cons' ? '8일·220만원 중 하나 이상(국민연금, 건설)' : '8일·60시간·220만원 중 하나 이상(국민연금)');
       var endEl = $('[data-k="end"]', pane); endEl.disabled = !!o.ongoing;
       var months = buildDinsRows(pane, o);
-      if (!months) { $('.wlabel', pane).textContent = ''; return err(pane, '일용직 국민연금·건강보험 판단 결과', o.start ? '근로 종료일을 넣거나 "아직 근로 중"을 체크해주세요.' : '근로 시작일과 종료일을 넣어주세요.'); }
+      var T = '일용직 국민연금·건강보험 판단 결과';
+      if (!months) { $('.wlabel', pane).textContent = ''; return err(pane, T, o.start ? '근로 종료일을 넣거나 "아직 근로 중"을 체크해주세요.' : '근로 시작일과 종료일을 넣어주세요.'); }
       o = read(pane);
       var rows = months.map(function (mm) { var k = 'r' + mm.key; return { y: mm.y, m: mm.m, days: o[k + 'd'] || 0, first: o[k + 'f'] || 0, last: o[k + 'l'] || 0, hours: o[k + 'h'] || 0, income: o[k + 'i'] || 0 }; });
-      var r = C.dailyInsurance({ start: o.start, end: o.end, ongoing: o.ongoing, cons: o.kind === 'cons', birth: o.birth, rows: rows, manHI: o.manHI, manNP: o.manNP, npWish: o.npWish });
-      if (r.error) return err(pane, '일용직 국민연금·건강보험 판단 결과', r.error);
+      var r = C.dailyInsurance({ start: o.start, end: o.end, ongoing: o.ongoing, cons: o.kind === 'cons', birth: o.birth, rows: rows, manHI: o.manHI, npWish: o.npWish });
       var fmt = function (d) { return d ? C.ymd(d).replace(/-/g, '.') : '-'; };
-      $('.wlabel', pane).textContent = '[' + fmt(C.D(o.start)).slice(2) + ' ~ ' + fmt(r.wEnd).slice(2) + ']';
-      if (!rows.some(function (x) { return x.days > 0; })) return err(pane, '일용직 국민연금·건강보험 판단 결과', '달마다 일한 날수를 넣어주세요.');
-      function line(name, d) {
-        if (d.status === 'unknown') return { c: [name, '판단 필요', '-', '-', '첫 1개월이 두 달에 걸쳐 자동 판단이 안 돼요. 위 3번에서 예/아니오를 골라주세요.'], cls: 'hl' };
-        if (d.status === 'exempt') return { c: [name, '제외', '-', '-', d.basis] };
-        if (d.status === 'no') return { c: [name, '비대상', '-', '-', d.basis] };
-        return { c: [name, '대상', fmt(d.acq), d.lost ? fmt(d.lost) : '근로 중', d.basis] };
+      var w0 = r.wins && r.wins[0];
+      $('.wlabel', pane).textContent = w0 ? '[' + fmt(C.D(o.start)).slice(2) + ' ~ ' + fmt(w0.wEnd).slice(2) + ']' : '';
+      if (r.error) return err(pane, T, r.error);
+      var res = [];
+      function lines(name, list, exempt) {
+        if (exempt) return res.push({ c: [name, '제외', '-', '-', exempt] });
+        if (!list.length) return res.push({ c: [name, '비대상', '-', '-', name === '건강보험' ? '1개월 이상 근로하면서 8일 이상 일한 달이 없음' : '근로 시작 월과 다음 달을 모두 채우지 못했고(1개월 이상 계속 근로 요건), 그 뒤 요건을 채운 달도 없음'] });
+        list.forEach(function (x, n) {
+          if (x.unknown) return res.push({ c: [name, '판단 필요', '-', '-', '첫 1개월이 두 달에 걸쳐 자동 판단이 안 돼요. 위 3번에서 예/아니오를 골라주세요.'], cls: 'hl' });
+          res.push({ c: [n ? name + '(' + (n + 1) + ')' : name, n ? '재취득' : '대상', fmt(x.acq), x.lost ? fmt(x.lost) : '근로 중', x.basis] });
+        });
       }
+      lines('건강보험', r.hi); lines('국민연금', r.np, r.npExempt);
       var taxLabel = { daily: '일용', regular: '상용 전환', watch: '일용(확인)' }[r.tax.status];
-      var res = [line('건강보험', r.hi), line('국민연금', r.np), { c: ['소득세', taxLabel, '-', '-', r.tax.basis], cls: r.tax.status === 'regular' ? 'hl' : '' }];
-      var f = r.first, mrows = [];
-      mrows.push({ c: [['첫 1개월', fmt(C.D(o.start)).slice(2) + '~' + fmt(r.wEnd).slice(2) + (f.ambiguous ? ' · 일부 달 판단 불가' : '')], f.sure.d + (f.ambiguous ? '+' + f.maybe.d : '') + '일', wonD(f.sure.h) + (f.ambiguous ? '+' + wonD(f.maybe.h) : ''), won(f.sure.inc) + (f.ambiguous ? '+' + won(f.maybe.inc) : ''),
-        f.hi.v === null ? '?' : f.hi.v ? '충족' : '미충족', f.np.v === null ? '?' : f.np.v ? '충족' : '미충족'] });
-      r.monthly.forEach(function (x) { mrows.push({ c: [x.y + '.' + ('0' + (x.m + 1)).slice(-2), (x.r.days || 0) + '일', wonD(x.r.hours || 0), won(x.r.income || 0), x.hi ? '충족' : '미충족', x.np ? '충족' : '미충족'] }); });
+      res.push({ c: ['소득세', taxLabel, '-', '-', r.tax.basis], cls: r.tax.status === 'regular' ? 'hl' : '' });
+      var mrows = [];
+      r.wins.forEach(function (w, n) {
+        var st = r.episodes[n].start;
+        mrows.push({ c: [['건강보험 첫 1개월' + (n ? '(재근로)' : ''), fmt(st).slice(2) + '~' + fmt(w.wEnd).slice(2) + (w.amb ? ' · 일부 판단 불가' : '')], w.sure + (w.amb ? '+' + w.maybe : '') + '일', '', '', w.v === null ? '?' : w.v ? '충족' : '미충족', '—'] });
+      });
+      r.months.forEach(function (x, n) {
+        var first = x.y === C.D(o.start).getUTCFullYear() && x.m === C.D(o.start).getUTCMonth();
+        mrows.push({ c: [[x.y + '.' + ('0' + (x.m + 1)).slice(-2), first ? '시작일~말일' : ''], (x.r.days || 0) + '일', wonD(x.r.hours || 0), won(x.r.income || 0), x.hi ? '8일 이상' : '8일 미만', x.np ? '충족' : '미충족'] });
+      });
       var notes = [];
-      var target = r.hi.status === 'yes' || r.np.status === 'yes';
+      var target = r.hi.some(function (x) { return x.acq; }) || r.np.some(function (x) { return x.acq; });
       notes.push([target ? '국민연금·건강보험 확인 대상이에요. 지급하기 전 꼭 확인하시길 바랍니다.' : '국민연금·건강보험 확인 대상의 경우, 지급하기 전 꼭 확인하시길 바랍니다.', 'w']);
       if (r.tax.status === 'regular') notes.push(['같은 회사에 ' + (o.kind === 'cons' ? '1년' : '3개월') + ' 이상 계속 고용됐어요. 일용직이 아니라 상용직으로 전환해야 해요.', 'w']);
-      if (r.age60 && r.np.status !== 'exempt' && (!r.np.lost || r.age60 < r.np.lost) && r.age60 > C.D(o.start)) notes.push(['근로기간 중 ' + fmt(r.age60) + '에 만 60세가 돼요. 국민연금 상실 여부를 확인해주세요.']);
-      notes.push(['국민연금 소득 기준 220만원은 보건복지부장관이 고시하는 금액으로, 바뀌면 다시 확인해야 해요.']);
-      notes.push(['1개월(1일~말일) 넘게 전혀 일하지 않다가 다시 일하면 그날을 최초 근로일로 보고 새로 판단해요. 이런 경우는 기간을 나눠 넣어주세요.']);
+      if (r.age60 && !r.npExempt && r.age60 > C.D(o.start) && (!e2() || r.age60 <= e2())) notes.push(['근로기간 중 ' + fmt(r.age60) + '에 만 60세가 돼요. 국민연금 상실 여부를 확인해주세요.']);
+      function e2() { return o.ongoing ? null : C.D(o.end); }
+      if (r.episodes.length > 1) notes.push(['한 달(1일~말일) 동안 전혀 일하지 않은 달이 있어서, 그 뒤 첫 근로일을 새 최초 근로일로 보고 다시 판단했어요.']);
+      if (o.kind === 'cons') notes.push(['건설 일용근로자는 건설현장별로 먼저 판단하고, 현장별로 빠지는 사람은 건설사업장 기준 합산(월 8일·220만원)으로 판단해요. 여러 현장에서 일했다면 합산 기준도 확인해주세요.']);
+      notes.push(['국민연금 소득 기준 220만원은 보건복지부장관이 고시하는 금액이에요.']);
       notes.push(['취득·상실일은 참고값이에요. 실제 신고 전에는 세무사무실에 공유해 확인해주세요.']);
-      show(pane, { title: '일용직 국민연금·건강보험 판단 결과', cond: o.start + ' ~ ' + (o.ongoing ? '근로 중' : o.end) + ' · ' + (o.kind === 'cons' ? '건설' : '일반') + (o.birth ? ' · 생년월일 입력' : ''),
+      show(pane, { title: T, cond: o.start + ' ~ ' + (o.ongoing ? '근로 중' : o.end) + ' · ' + (o.kind === 'cons' ? '건설' : '일반') + (o.birth ? ' · 생년월일 입력' : ''),
         blocks: [
           { t: 'table', title: '판단 결과', head: ['구분', '판단', '취득일', '상실일', '근거'], num: [], rows: res },
-          { t: 'table', title: '달별 요건', head: ['근로월', '근로일수', '근로시간', '소득', '건강(8일)', '국민연금'], num: [1, 2, 3], rows: mrows }],
+          { t: 'table', title: '달별 요건', head: ['근로월', '근로일수', '근로시간', '소득', '건강보험', '국민연금'], num: [1, 2, 3], rows: mrows }],
         notes: notes });
     },
 

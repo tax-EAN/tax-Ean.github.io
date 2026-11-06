@@ -242,106 +242,114 @@
   }
   function hiMonthlyPaid(base) { var hi = Math.min(RATES.hi.capEach, floor10(base * RATES.hi.rate)); return { hi: hi, ltc: floor10(hi * RATES.ltc.incomeRate / RATES.hi.total) }; }
 
-  /* ---------- 일용직 국민연금·건강보험 판단 ---------- */
-  // o: {start, end, ongoing, cons(건설), birth, rows:[{y,m,days,first,last,hours,income}], manHI, manNP('auto'|'yes'|'no'), today}
+  /* ---------- 일용직 국민연금·건강보험 판단 ----------
+     건강보험: 공단 「일용근로자 건강보험 자격 실무 안내」(2023.7) 취득·상실 기준과 사례 1~9
+     국민연금: 「2026 알기쉬운 국민연금 사업장 실무안내」 일용근로자(2025.7.1. 시행 1개월 판단기준) */
+  // o: {start, end, ongoing, cons, birth, rows:[{y,m,days,first,last,hours,income}], manHI, npWish}
   function dailyInsurance(o) {
     var a = D(o.start), e = o.ongoing ? null : D(o.end);
     if (!a || (!o.ongoing && (!e || e < a))) return { error: '전체 근로기간을 확인해주세요.' };
     var PAY = 2200000;
-    function periodEnd(st, n) {                                     // n개월 기간의 마지막 날(민법 기간 계산: 해당일 전날, 해당일이 없으면 그 달 말일)
+    function periodEnd(st, n) {
       var y = st.getUTCFullYear(), m = st.getUTCMonth() + n, ty = y + Math.floor(m / 12), tm = ((m % 12) + 12) % 12;
       return st.getUTCDate() > dim(ty, tm) ? new Date(Date.UTC(ty, tm + 1, 0)) : addDays(new Date(Date.UTC(ty, tm, st.getUTCDate())), -1);
     }
-    var wEnd = periodEnd(a, 1);                                     // 첫 1개월
-    var rows = o.rows || [];
-    function npMeets(d, h, inc) { return d >= 8 || (!o.cons && h >= 60) || inc >= PAY; }
-    // 첫 1개월 집계(달 중간에 걸치는 달은 최초·최종 근로일로 판단)
-    var sure = { d: 0, h: 0, inc: 0 }, maybe = { d: 0, h: 0, inc: 0 }, ambiguous = false;
+    function npMeets(r) { return (r.days || 0) >= 8 || (!o.cons && (r.hours || 0) >= 60) || (r.income || 0) >= PAY; }
+    function hiMeets(r) { return (r.days || 0) >= 8; }
+    function first1(r) { return new Date(Date.UTC(r.y, r.m, 1)); }
+    function next1(r) { return new Date(Date.UTC(r.y, r.m + 1, 1)); }
+    function lbl(r) { return r.y + '.' + (r.m + 1) + '월'; }
+    function lastWork(r) { return new Date(Date.UTC(r.y, r.m, r.last || dim(r.y, r.m))); }
+    var rows = (o.rows || []).slice().sort(function (p, q) { return (p.y - q.y) * 12 + p.m - q.m; });
+    // 근로 단위 나누기: 한 달(1일~말일) 동안 전혀 일하지 않으면 다음 근로일이 새 최초 근로일
+    var eps = [], cur = null;
     rows.forEach(function (r) {
-      var ms = new Date(Date.UTC(r.y, r.m, 1)), me = new Date(Date.UTC(r.y, r.m + 1, 0));
-      if (ms > wEnd || !(r.days > 0)) return;
-      if (me <= wEnd) { sure.d += r.days; sure.h += r.hours || 0; sure.inc += r.income || 0; return; }
-      var cut = wEnd.getUTCDate();
-      if (r.first && r.first > cut) return;                      // 이 달 근로가 모두 첫 1개월 뒤
-      if (r.last && r.last <= cut) { sure.d += r.days; sure.h += r.hours || 0; sure.inc += r.income || 0; return; }
-      ambiguous = true; maybe.d += r.days; maybe.h += r.hours || 0; maybe.inc += r.income || 0;
+      if (!(r.days > 0)) { cur = null; return; }
+      if (!cur) { cur = { start: eps.length ? new Date(Date.UTC(r.y, r.m, r.first || 1)) : a, rows: [] }; eps.push(cur); }
+      cur.rows.push(r);
     });
-    function judge(test, man) {
-      if (man === 'yes') return { v: true, how: '직접 선택' };
-      if (man === 'no') return { v: false, how: '직접 선택' };
-      if (test(sure.d, sure.h, sure.inc)) return { v: true, how: '자동' };
-      if (!ambiguous || !test(sure.d + maybe.d, sure.h + maybe.h, sure.inc + maybe.inc)) return { v: false, how: '자동' };
-      return { v: null, how: '판단 필요' };
+    if (!eps.length) return { error: '달마다 일한 날수를 넣어주세요.' };
+    eps.forEach(function (ep, n) {
+      ep.isLast = n === eps.length - 1;
+      ep.ended = !ep.isLast || !o.ongoing;
+      var lr = ep.rows[ep.rows.length - 1];
+      ep.lastDay = ep.isLast && e ? e : lastWork(lr);
+      ep.rows.forEach(function (r) { r.k = (r.y - ep.start.getUTCFullYear()) * 12 + r.m - ep.start.getUTCMonth(); });
+    });
+    // ---- 건강보험 ----
+    function hiWindow(ep, man) {
+      var wEnd = periodEnd(ep.start, 1), sure = 0, maybe = 0, amb = false;
+      ep.rows.forEach(function (r) {
+        var ms = first1(r), me = new Date(Date.UTC(r.y, r.m + 1, 0));
+        if (ms > wEnd) return;
+        if (me <= wEnd) { sure += r.days; return; }
+        var cut = wEnd.getUTCDate();
+        if (r.first && r.first > cut) return;
+        if (r.last && r.last <= cut) { sure += r.days; return; }
+        amb = true; maybe += r.days;
+      });
+      var v = man === 'yes' ? true : man === 'no' ? false : sure >= 8 ? true : (!amb || sure + maybe < 8) ? false : null;
+      return { wEnd: wEnd, sure: sure, maybe: maybe, amb: amb, v: v, how: (man === 'yes' || man === 'no') ? '직접 선택' : '자동' };
     }
-    var fHI = judge(function (d) { return d >= 8; }, o.manHI);
-    var fNP = judge(npMeets, o.manNP);
-    // 달력 월 단위 판단(최초 근로일이 속한 달 이외의 달)
-    var sY = a.getUTCFullYear(), sM = a.getUTCMonth();
-    function idx(r) { return (r.y - sY) * 12 + (r.m - sM); }          // 최초 근로일이 속한 달 = 0
-    var all = rows.map(function (r) { return { y: r.y, m: r.m, k: idx(r), hi: (r.days || 0) >= 8, np: npMeets(r.days || 0, r.hours || 0, r.income || 0), r: r }; });
-    var monthly = all.filter(function (x) { return x.k >= 1; });
-    var lastDay = e, endRow = e ? all.filter(function (x) { return x.y === e.getUTCFullYear() && x.m === e.getUTCMonth(); })[0] : null;
-    function first1(x) { return new Date(Date.UTC(x.y, x.m, 1)); }
-    function lbl(x) { return x.y + '.' + (x.m + 1) + '월'; }
-    function lastWorkIn(x) {                                          // 그 달의 최종 근로일(없으면 그 전 달의 최종 근로일)
-      for (var t = all.indexOf(x); t >= 0; t--) { var q = all[t]; if (q.r.days > 0) return new Date(Date.UTC(q.y, q.m, q.r.last || new Date(Date.UTC(q.y, q.m + 1, 0)).getUTCDate())); }
-      return a;
-    }
-    // 건강보험
-    function decideHI(first) {
-      if (first.v === null) return { status: 'unknown' };
-      var acq, basis, startK, oneDay;
-      if (first.v) { acq = a; startK = 1; oneDay = a.getUTCDate() === 1; basis = '최초 근로일부터 1개월 동안 8일 이상 → 최초 근로일 취득'; }
-      else {
-        var f = monthly.filter(function (x) { return x.hi; })[0];
-        if (!f) return { status: 'no', basis: '첫 1개월과 그 뒤 어느 달에도 8일 이상 일하지 않음' };
-        acq = first1(f); startK = f.k + 1; oneDay = true; basis = '첫 1개월 미충족 → ' + lbl(f) + ' 8일 이상, 그 달 1일 취득';
-      }
-      var rest = all.filter(function (x) { return x.k >= startK; });
-      for (var t = 0; t < rest.length; t++) {
-        var x = rest[t]; if (x.hi) continue;
-        if (!oneDay && x.k === 1) {
-          var nx = all.filter(function (q) { return q.k === 2; })[0];
-          if (nx && nx.hi) { basis += ' / ' + lbl(x) + ' 8일 미만이지만 다다음 달 8일 이상이라 유지'; continue; }
-          var lw = lastWorkIn(x);
-          return { status: 'yes', acq: acq, lost: addDays(lw, 1), basis: basis + ' / 다음 달(' + lbl(x) + ') 8일 미만 → 그 달 최종 근로일 다음 날 상실' };
+    function hiEpisode(ep, win) {
+      var out = [], acq = null, type = null, basis = '', k1fail = null;
+      if (win.v === null) return [{ unknown: true }];
+      var list = ep.rows, t = 0;
+      if (win.v) { acq = ep.start; type = ep.start.getUTCDate() === 1 ? 'one' : 'mid'; basis = '최초 근로일부터 1개월 동안 8일 이상 → 최초 근로일 취득'; t = list.findIndex(function (r) { return r.k >= 1; }); if (t < 0) t = list.length; }
+      for (; t <= list.length; t++) {
+        var r = list[t];
+        if (!acq) {
+          if (!r) break;
+          if (r.k >= 1 && hiMeets(r)) { acq = first1(r); type = 'one'; basis = (out.length ? '재취득: ' : '첫 1개월 미충족 → ') + lbl(r) + ' 8일 이상, 그 달 1일 취득'; }
+          continue;
         }
-        return { status: 'yes', acq: acq, lost: first1(x), basis: basis + ' / ' + lbl(x) + ' 8일 미만 → 그 달 1일 상실' };
+        if (!r) break;
+        if (hiMeets(r)) continue;
+        if (type === 'mid' && r.k === 1) {
+          var r2 = list.filter(function (q) { return q.k === 2; })[0];
+          if (r2 && hiMeets(r2)) { basis += ' / ' + lbl(r) + ' 8일 미만이지만 다다음 달 8일 이상이라 유지'; continue; }
+          out.push({ acq: acq, lost: addDays(lastWork(r), 1), basis: basis + ' / 다음 달(' + lbl(r) + ') 8일 미만 → 그 달 최종 근로일 다음 날 상실' });
+        } else out.push({ acq: acq, lost: first1(r), basis: basis + ' / ' + lbl(r) + ' 8일 미만 → 그 달 1일 상실' });
+        acq = null;
       }
-      return { status: 'yes', acq: acq, lost: lastDay ? addDays(lastDay, 1) : null, basis: basis + (lastDay ? ' / 근로 종료 → 최종 근로일 다음 날 상실' : '') };
+      if (acq) out.push({ acq: acq, lost: ep.ended ? addDays(ep.lastDay, 1) : null, basis: basis + (ep.ended ? ' / 근로 종료 → 최종 근로일 다음 날 상실' : '') });
+      return out;
     }
-    // 국민연금
-    function decideNP(first) {
-      if (first.v === null) return { status: 'unknown' };
-      var acq, basis, startK;
-      if (first.v) { acq = a; startK = 1; basis = '최초 근로일부터 1개월 동안 요건 충족 → 최초 근로일 취득'; }
-      else {
-        var f = monthly.filter(function (x) { return x.np; })[0];
-        if (!f) return { status: 'no', basis: '첫 1개월과 그 뒤 어느 달에도 8일·' + (o.cons ? '' : '60시간·') + '220만원 요건을 채우지 않음' };
-        acq = first1(f); startK = f.k + 1; basis = '첫 1개월 미충족 → ' + lbl(f) + ' 요건 충족, 그 달 1일 취득';
+    // ---- 국민연금 ----
+    function npEpisode(ep) {
+      var out = [], list = ep.rows, acq = null, basis = '', t = 0;
+      var r0 = list.filter(function (q) { return q.k === 0; })[0], r1 = list.filter(function (q) { return q.k === 1; })[0];
+      if (r0 && npMeets(r0) && r1 && npMeets(r1)) { acq = ep.start; basis = '근로 시작 월(시작일~말일)과 다음 달 모두 요건 충족 → 근로시작일 취득'; t = list.indexOf(r1) + 1; }
+      var lastR = list[list.length - 1];
+      for (; t < list.length; t++) {
+        var r = list[t];
+        if (!acq) {
+          if (r.k >= 1 && npMeets(r)) { acq = first1(r); basis = (out.length ? '재취득: ' : (r0 && npMeets(r0) ? '근로 시작 월은 충족했지만 다음 달 미충족 → ' : '근로 시작 월 미충족 → ')) + lbl(r) + ' 요건 충족, 그 달 1일 취득'; }
+          continue;
+        }
+        if (npMeets(r)) continue;
+        var fin = r === lastR && ep.ended;
+        out.push({ acq: acq, lost: fin && o.npWish ? next1(r) : first1(r), basis: basis + ' / ' + (fin ? '최종 근로월(' + lbl(r) + ')' : lbl(r)) + ' 요건 미충족 → ' + (fin && o.npWish ? '희망에 따라 다음 달 1일' : '그 달 1일') + ' 상실' });
+        acq = null;
       }
-      var rest = all.filter(function (x) { return x.k >= startK; });
-      for (var t = 0; t < rest.length; t++) {
-        var x = rest[t]; if (x.np) continue;
-        var isEnd = endRow && x === endRow;
-        if (isEnd && o.npWish) return { status: 'yes', acq: acq, lost: new Date(Date.UTC(x.y, x.m + 1, 1)), basis: basis + ' / 최종 근로월(' + lbl(x) + ') 요건 미충족이지만 희망에 따라 다음 달 1일 상실' };
-        return { status: 'yes', acq: acq, lost: first1(x), basis: basis + ' / ' + (isEnd ? '최종 근로월(' + lbl(x) + ')' : lbl(x)) + ' 요건 미충족 → 그 달 1일 상실' };
-      }
-      if (!lastDay) return { status: 'yes', acq: acq, lost: null, basis: basis };
-      if (endRow && !endRow.np && first1(endRow) > acq) return { status: 'yes', acq: acq, lost: o.npWish ? new Date(Date.UTC(endRow.y, endRow.m + 1, 1)) : first1(endRow), basis: basis + ' / 최종 근로월 요건 미충족 → 그 달 1일 상실' };
-      return { status: 'yes', acq: acq, lost: new Date(Date.UTC(lastDay.getUTCFullYear(), lastDay.getUTCMonth() + 1, 1)), basis: basis + ' / 최종 근로월 요건 충족 → 다음 달 1일 상실' };
+      if (acq) out.push({ acq: acq, lost: ep.ended ? next1(lastR) : null, basis: basis + (ep.ended ? ' / 최종 근로월 요건 충족 → 다음 달 1일 상실' : '') });
+      return out;
     }
-    var decide = function (first, key) { return key === 'hi' ? decideHI(first) : decideNP(first); };
-    var hi = decide(fHI, 'hi'), np = decide(fNP, 'np');
-    // 국민연금: 만 60세 이상 제외
-    var age60 = null, b = D(o.birth);
-    if (b) { age60 = addMonths(b, 720); if (age60 <= a) np = { status: 'exempt', basis: '근로 시작일에 이미 만 60세 이상이라 국민연금 가입 대상이 아님' }; }
+    var hiOut = [], npOut = [], wins = [];
+    eps.forEach(function (ep, n) {
+      var w = hiWindow(ep, n === 0 ? o.manHI : 'auto'); wins.push(w);
+      hiEpisode(ep, w).forEach(function (x) { hiOut.push(x); });
+      npEpisode(ep).forEach(function (x) { npOut.push(x); });
+    });
+    var npExempt = null, age60 = null, b = D(o.birth);
+    if (b) { age60 = addMonths(b, 720); if (age60 <= a) npExempt = '근로 시작일에 이미 만 60세 이상이라 국민연금 가입 대상이 아님'; }
     // 소득세: 일용/상용
     var limit = periodEnd(a, o.cons ? 12 : 3), tax;
     if (o.ongoing) tax = { status: 'watch', limit: limit, basis: '근로 중 · ' + ymd(limit) + '까지 계속 고용되면 ' + (o.cons ? '1년' : '3개월') + ' 이상이 되어 상용근로자로 전환' };
     else if (e < limit) tax = { status: 'daily', limit: limit, basis: (o.cons ? '1년' : '3개월') + ' 미만 → 일용근로자(계속고용 만료일 ' + ymd(limit) + ', 만료 ' + (daysBetween(e, limit) - 1) + '일 전 종료)' };
     else tax = { status: 'regular', limit: limit, basis: (o.cons ? '1년' : '3개월') + ' 이상 계속 고용(' + ymd(limit) + '까지 근무) → 상용근로자로 전환해야 함' };
-    return { wEnd: wEnd, first: { hi: fHI, np: fNP, sure: sure, maybe: maybe, ambiguous: ambiguous }, monthly: monthly, hi: hi, np: np, tax: tax, age60: age60 };
+    var all = rows.map(function (r) { return { y: r.y, m: r.m, r: r, hi: hiMeets(r), np: npMeets(r) }; });
+    return { episodes: eps, wins: wins, hi: hiOut, np: npOut, npExempt: npExempt, age60: age60, tax: tax, months: all, npEnd: new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth() + 1, 0)) };
   }
 
   /* ---------- 날짜 ---------- */
