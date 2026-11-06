@@ -224,19 +224,20 @@
   // 부과 월수: 자격 취득일이 속한 달의 다음 달(1일 취득은 그 달)부터 자격 상실일 전날(=퇴직일)이 속한 달까지(국민건강보험법 제69조제2항)
   function hiMonths(join, retire) {
     var a = D(join), b = D(retire); if (!a || !b || b < a) return null;
-    var y = b.getUTCFullYear(), sm;
-    if (a.getUTCFullYear() < y) sm = 0;
-    else sm = a.getUTCDate() === 1 ? a.getUTCMonth() : a.getUTCMonth() + 1;
-    return { year: y, startMonth: sm, endMonth: b.getUTCMonth(), months: Math.max(0, b.getUTCMonth() - sm + 1) };
+    var y = b.getUTCFullYear(), sameYear = a.getUTCFullYear() === y;
+    var wm = sameYear ? a.getUTCMonth() : 0;                               // 근무월수: 일한 달(입사한 달 포함)
+    var sm = !sameYear ? 0 : (a.getUTCDate() === 1 ? a.getUTCMonth() : a.getUTCMonth() + 1); // 부과월수: 보험료를 매기는 달
+    return { year: y, workStart: wm, startMonth: sm, endMonth: b.getUTCMonth(),
+      workMonths: Math.max(0, b.getUTCMonth() - wm + 1), months: Math.max(0, b.getUTCMonth() - sm + 1) };
   }
-  // o: {total(보수총액), months, paidHi, paidLtc}
+  // o: {total(보수총액), months(근무월수: 보수월액 나누는 수), chargeMonths(부과월수), paidHi, paidLtc}
   function hiSettle(o) {
-    var R = RATES, m = Math.max(1, o.months | 0);
+    var R = RATES, m = Math.max(1, o.months | 0), cm = o.chargeMonths == null ? m : Math.max(0, o.chargeMonths | 0);
     var monthly = Math.floor((o.total || 0) / m);
     var hi = Math.min(R.hi.capEach, floor10(monthly * R.hi.rate));
     var ltc = floor10(hi * R.ltc.incomeRate / R.hi.total);
-    var hiDue = hi * m, ltcDue = ltc * m;
-    return { monthly: monthly, hiM: hi, ltcM: ltc, hiDue: hiDue, ltcDue: ltcDue, paidHi: o.paidHi || 0, paidLtc: o.paidLtc || 0,
+    var hiDue = hi * cm, ltcDue = ltc * cm;
+    return { monthly: monthly, chargeMonths: cm, hiM: hi, ltcM: ltc, hiDue: hiDue, ltcDue: ltcDue, paidHi: o.paidHi || 0, paidLtc: o.paidLtc || 0,
       hiDiff: hiDue - (o.paidHi || 0), ltcDiff: ltcDue - (o.paidLtc || 0), diff: hiDue + ltcDue - (o.paidHi || 0) - (o.paidLtc || 0) };
   }
   function hiMonthlyPaid(base) { var hi = Math.min(RATES.hi.capEach, floor10(base * RATES.hi.rate)); return { hi: hi, ltc: floor10(hi * RATES.ltc.incomeRate / RATES.hi.total) }; }
