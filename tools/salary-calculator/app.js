@@ -297,6 +297,44 @@
       show(pane, salaryDoc(s, pane, o, '급여 계산 결과', cond, notes));
     },
 
+    hiset: function (pane, o) {
+      showIf(pane, o);
+      var mm = C.hiMonths(o.join, o.retire);
+      var info = $('.hmh', pane);
+      if (!mm) { info.textContent = '입사일과 퇴직일을 확인해주세요.'; return err(pane, '건강보험 퇴직정산 결과', '입사일과 퇴직일을 확인해주세요.'); }
+      if (mm.year !== 2026) return err(pane, '건강보험 퇴직정산 결과', '이 계산기는 2026년 요율 기준이라 2026년 퇴직만 계산할 수 있어요.');
+      info.textContent = '자동 계산: ' + (mm.startMonth + 1) + '월 ~ ' + (mm.endMonth + 1) + '월, ' + mm.months + '개월' + (mm.startMonth > 0 && C.D(o.join).getUTCFullYear() === mm.year && C.D(o.join).getUTCDate() !== 1 ? ' (1일이 아닌 날 입사해 입사한 달은 빼요)' : '');
+      var months = o.monthsOv > 0 ? o.monthsOv : mm.months;
+      if (!(months > 0)) return err(pane, '건강보험 퇴직정산 결과', '보험료 부과 월수가 0개월이에요. 입사한 달에 퇴사하면 정산할 보험료가 없을 수 있어요.');
+      if (!(o.total > 0)) return err(pane, '건강보험 퇴직정산 결과', '퇴직 연도 보수총액을 넣어주세요.');
+      var paidHi, paidLtc, pm;
+      if (o.paidMode === 'direct') { paidHi = o.paidHi || 0; paidLtc = o.paidLtc || 0; }
+      else { pm = C.hiMonthlyPaid(o.base || 0); paidHi = pm.hi * months; paidLtc = pm.ltc * months; }
+      var r = C.hiSettle({ total: o.total, months: months, paidHi: paidHi, paidLtc: paidLtc });
+      var sign = function (v) { return (v > 0 ? '+' : v < 0 ? '−' : '') + won(Math.abs(v)); };
+      var verdict = r.diff > 0 ? '추가로 낼 금액' : r.diff < 0 ? '돌려받을 금액' : '정산 차액';
+      var rows = [
+        { c: ['건강보험료', won(r.hiDue), won(r.paidHi), sign(r.hiDiff)] },
+        { c: ['장기요양보험료', won(r.ltcDue), won(r.paidLtc), sign(r.ltcDiff)] },
+        { c: ['합계', won(r.hiDue + r.ltcDue), won(r.paidHi + r.paidLtc), sign(r.diff)], cls: 'tot' }];
+      var notes = [];
+      notes.push([r.diff > 0 ? '퇴사 달 급여에서 근로자분 ' + won(r.diff) + '원을 추가로 떼고, 회사도 같은 금액을 추가로 내요.' : r.diff < 0 ? '근로자에게 ' + won(-r.diff) + '원을 돌려주고, 회사분도 같은 금액을 돌려받아요.' : '정산할 차액이 없어요.', r.diff > 0 ? 'w' : 'ok']);
+      if (r.diff > 0) notes.push(['추가로 낼 근로자분이 보수월액보험료 하한액 이상이면 회사 신청으로 12회 이내 분할납부할 수 있어요.']);
+      notes.push(['월 보험료를 10원 단위로 버린 뒤 근무월수를 곱했어요. 공단 고지 금액과 몇십 원 차이가 날 수 있어요.']);
+      notes.push([ROUNDNOTE]);
+      show(pane, { title: '건강보험 퇴직정산 모의계산 결과', cond: o.join + ' 입사 · ' + o.retire + ' 퇴직 · 근무월수 ' + months + '개월 · 보수총액 ' + won(o.total) + '원',
+        sum: [S('정산 보수월액', won(r.monthly)), S('근무월수', months, '개월'), S(verdict + '(근로자)', sign(r.diff), '원', true), S('회사분 정산', sign(r.diff))],
+        blocks: [
+          { t: 'table', title: '1. 정산 보수월액', head: ['항목', '금액'], num: [1], rows: [
+            { c: ['퇴직 연도 보수총액', won(o.total)] }, { c: ['근무월수', months + '개월'] },
+            { c: [['정산 보수월액', '보수총액 ÷ 근무월수'], won(r.monthly)], cls: 'tot' }] },
+          { t: 'table', title: '2. 다시 계산한 보험료(근로자분)', head: ['항목', '월 보험료', '근무월수', '합계'], num: [1, 2, 3], rows: [
+            { c: [['건강보험료', '정산 보수월액 × 3.595%'], won(r.hiM), months, won(r.hiDue)] },
+            { c: [['장기요양보험료', '건강보험료 × 13.14%'], won(r.ltcM), months, won(r.ltcDue)] }] },
+          { t: 'table', title: '3. 정산(근로자분)', head: ['항목', '내야 할 보험료', '이미 낸 보험료', '차액'], num: [1, 2, 3], rows: rows }],
+        notes: notes });
+    },
+
     table: function (pane, o) {
       var rg = (o.range || '20-100').split('-'), lo = +rg[0], hi = +rg[1], meal = +o.meal || 0, rows = [];
       for (var m = lo; m <= hi; m++) {

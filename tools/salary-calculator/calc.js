@@ -220,6 +220,27 @@
     return { rows: rows, active: Math.round(active * 100) / 100, next: next, workDays: daysBetween(a, t), years: Math.floor(mm / 12), months: mm % 12 };
   }
 
+  /* ---------- 건강보험 퇴직정산 ---------- */
+  // 부과 월수: 자격 취득일이 속한 달의 다음 달(1일 취득은 그 달)부터 자격 상실일 전날(=퇴직일)이 속한 달까지(국민건강보험법 제69조제2항)
+  function hiMonths(join, retire) {
+    var a = D(join), b = D(retire); if (!a || !b || b < a) return null;
+    var y = b.getUTCFullYear(), sm;
+    if (a.getUTCFullYear() < y) sm = 0;
+    else sm = a.getUTCDate() === 1 ? a.getUTCMonth() : a.getUTCMonth() + 1;
+    return { year: y, startMonth: sm, endMonth: b.getUTCMonth(), months: Math.max(0, b.getUTCMonth() - sm + 1) };
+  }
+  // o: {total(보수총액), months, paidHi, paidLtc}
+  function hiSettle(o) {
+    var R = RATES, m = Math.max(1, o.months | 0);
+    var monthly = Math.floor((o.total || 0) / m);
+    var hi = Math.min(R.hi.capEach, floor10(monthly * R.hi.rate));
+    var ltc = floor10(hi * R.ltc.incomeRate / R.hi.total);
+    var hiDue = hi * m, ltcDue = ltc * m;
+    return { monthly: monthly, hiM: hi, ltcM: ltc, hiDue: hiDue, ltcDue: ltcDue, paidHi: o.paidHi || 0, paidLtc: o.paidLtc || 0,
+      hiDiff: hiDue - (o.paidHi || 0), ltcDiff: ltcDue - (o.paidLtc || 0), diff: hiDue + ltcDue - (o.paidHi || 0) - (o.paidLtc || 0) };
+  }
+  function hiMonthlyPaid(base) { var hi = Math.min(RATES.hi.capEach, floor10(base * RATES.hi.rate)); return { hi: hi, ltc: floor10(hi * RATES.ltc.incomeRate / RATES.hi.total) }; }
+
   /* ---------- 날짜 ---------- */
   function D(s) { if (!s) return null; var p = String(s).split('-'); if (p.length < 3) return null; var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])); return isNaN(d) ? null : d; }
   function ymd(d) { return d.toISOString().slice(0, 10); }
@@ -368,7 +389,7 @@
     RATES: RATES, INDUSTRY: INDUSTRY, floor10: floor10, unit: unit,
     tableTax: tableTax, incomeTax: incomeTax, kidDeduction: kidDeduction, nontaxSplit: nontaxSplit,
     salary: salary, salaryReverse: salaryReverse, daily: daily, dailyReverse: dailyReverse,
-    biz: biz, bizReverse: bizReverse, etc: etc, etcReverse: etcReverse, holidayPay: holidayPay, annualLeave: annualLeave, prorate: prorate, monthlyHours: monthlyHours,
+    biz: biz, bizReverse: bizReverse, etc: etc, etcReverse: etcReverse, holidayPay: holidayPay, annualLeave: annualLeave, hiMonths: hiMonths, hiSettle: hiSettle, hiMonthlyPaid: hiMonthlyPaid, prorate: prorate, monthlyHours: monthlyHours,
     averageWage: averageWage, avgSegments: avgSegments, wageInPeriod: wageInPeriod, monthsDiff: monthsDiff, retirementTax: retirementTax, severance: severance,
     leavePay: leavePay, overtime: overtime, OT: OT, D: D, ymd: ymd, daysBetween: daysBetween
   };
