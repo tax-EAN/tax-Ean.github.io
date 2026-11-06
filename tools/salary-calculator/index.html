@@ -329,23 +329,23 @@ dialog.imgdlg::backdrop{background:rgba(0,0,0,.45)}
 
 <!-- 건강보험 퇴직정산 -->
 <section class="pane" id="hiset" data-title="건강보험 퇴직정산 모의계산" hidden>
-  <div class="pane-head"><h2>건강보험 퇴직정산 모의계산</h2><p>직원이 퇴사하면 그해 실제로 받은 보수로 건강보험료를 다시 계산해, 그동안 낸 보험료와의 차이를 퇴사 달 급여에서 정산해요. 그 금액을 미리 계산해봐요.</p></div>
+  <div class="pane-head"><h2>건강보험 퇴직정산 모의계산</h2><p>직원이 퇴사하면 그해 실제로 받은 보수로 건강보험료를 다시 계산해, 그동안 낸 보험료와의 차이를 퇴사 달 급여에서 정산해요. 그 금액을 미리 계산해봐요.</p><p style="color:var(--warn);font-weight:700">모의계산은 실제 퇴직정산 금액이 아니라 모의계산이니, 꼭 참고 정도만 하시길 바랍니다.</p></div>
   <div class="cols">
     <div class="form">
       <div class="fs"><h3><span class="no">1</span>근무기간</h3>
         <div class="g2">
-          <label class="f"><span>입사일(자격 취득일)</span><input type="date" data-k="join" value="2025-03-02"></label>
-          <label class="f"><span>퇴직일(마지막 근무일)</span><input type="date" data-k="retire" value="2026-10-15"></label>
+          <label class="f"><span>입사일(자격 취득일)</span><input type="date" data-k="join"></label>
+          <label class="f"><span>퇴직일(마지막 근무일)</span><input type="date" data-k="retire"></label>
           <label class="f"><span>근무월수</span><div class="in"><input type="text" inputmode="numeric" class="int" data-k="monthsOv"><em>개월</em></div><small class="hmh">보수총액을 나누는 달 수(입사한 달 포함). 비워두면 자동 계산</small></label>
           <label class="f"><span>보험료 부과 월수</span><div class="in"><input type="text" inputmode="numeric" class="int" data-k="chargeOv"><em>개월</em></div><small class="hch">보험료를 매기는 달 수. 비워두면 자동 계산</small></label>
         </div>
       </div>
       <div class="fs"><h3><span class="no">2</span>퇴직 연도 보수총액</h3>
-        <label class="f"><span>보수총액</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="total" value="33000000"><em>원</em></div><small class="kr"></small><small>퇴직 연도 1월(그해 입사했다면 입사일)부터 퇴직일까지 받은 근로소득에서 비과세 소득을 뺀 금액이에요. 상여금·연차수당 등도 포함해요.</small></label>
+        <label class="f"><span>보수총액</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="total"><em>원</em></div><small class="kr"></small><small>퇴직 연도 1월(그해 입사했다면 입사일)부터 퇴직일까지 받은 근로소득에서 비과세 소득을 뺀 금액이에요. 상여금·연차수당 등도 포함해요.</small></label>
       </div>
       <div class="fs"><h3><span class="no">3</span>그해 이미 낸 보험료(근로자분)</h3>
         <div class="seg"><label><input type="radio" name="hs-paid" data-k="paidMode" value="base" checked>매달 기준 보수월액으로 계산</label><label><input type="radio" name="hs-paid" data-k="paidMode" value="direct">낸 금액 직접 입력</label></div>
-        <div data-show="paidMode=base"><label class="f"><span>매달 보험료를 낸 기준 보수월액</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="base" value="3000000"><em>원</em></div><small>건강보험 고지서·급여대장의 보수월액(입사 때 신고하거나 작년 보수로 정해진 금액)이에요.</small></label></div>
+        <div data-show="paidMode=base"><label class="f"><span>매달 보험료를 낸 기준 보수월액</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="base"><em>원</em></div><small>건강보험 고지서·급여대장의 보수월액(입사 때 신고하거나 작년 보수로 정해진 금액)이에요.</small></label></div>
         <div data-show="paidMode=direct" class="g2">
           <label class="f"><span>낸 건강보험료 합계</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="paidHi"><em>원</em></div></label>
           <label class="f"><span>낸 장기요양보험료 합계</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="paidLtc"><em>원</em></div></label>
@@ -363,7 +363,7 @@ dialog.imgdlg::backdrop{background:rgba(0,0,0,.45)}
       <li>작년분 차이는 매년 4월 건강보험 연말정산으로 따로 정산해요. 이 계산은 퇴직 연도분만이에요.</li>
     </ul>
   </div>
-  <div class="box warn"><p class="box-t">모의계산이에요</p><p>실제 정산 금액은 공단이 신고 내용으로 다시 계산한 고지 금액을 따라요. 연도 중 보수월액이 바뀌었거나 휴직·감면이 있었다면 결과가 달라질 수 있으니 세무사무실에 공유해 확인해주세요.</p></div>
+  <div class="box warn"><p class="box-t">모의계산이에요</p><p><b>모의계산은 실제 퇴직정산 금액이 아니라 모의계산이니, 꼭 참고 정도만 하시길 바랍니다.</b> 실제 정산 금액은 공단이 신고 내용으로 다시 계산한 고지 금액을 따라요. 연도 중 보수월액이 바뀌었거나 휴직·감면이 있었다면 결과가 달라질 수 있으니 세무사무실에 공유해 확인해주세요.</p></div>
   <details class="law"><summary>법령 근거</summary><p><b>국민건강보험법 제69조제2항</b> 자격 취득일이 속한 달의 다음 달(매월 1일 취득은 그 달)부터 자격 상실일 전날이 속한 달까지 보험료 징수 · <b>국민건강보험법 시행령 제39조</b> 보수월액보험료의 정산(제2항 퇴직 시 근로자와 정산 후 공단과 정산, 제4항 추가징수금액 분할납부) · 2026년 건강보험료율 7.19%(근로자 3.595%), 장기요양보험료율 건강보험료의 13.14%</p></details>
 </section>
 
@@ -786,8 +786,8 @@ dialog.imgdlg::backdrop{background:rgba(0,0,0,.45)}
   </div>
 </dialog>
 <div class="toast" role="status" aria-live="polite"></div>
-<script src="taxtable-2026.js?v=202611060949"></script>
-<script src="calc.js?v=202611060949"></script>
-<script src="app.js?v=202611060949"></script>
+<script src="taxtable-2026.js?v=202611060953"></script>
+<script src="calc.js?v=202611060953"></script>
+<script src="app.js?v=202611060953"></script>
 </body>
 </html>

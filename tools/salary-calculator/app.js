@@ -301,7 +301,7 @@
       showIf(pane, o);
       var mm = C.hiMonths(o.join, o.retire);
       var info = $('.hmh', pane);
-      if (!mm) { info.textContent = '입사일과 퇴직일을 확인해주세요.'; return err(pane, '건강보험 퇴직정산 결과', '입사일과 퇴직일을 확인해주세요.'); }
+      if (!mm) { info.textContent = '보수총액을 나누는 달 수(입사한 달 포함). 비워두면 자동 계산'; $('.hch', pane).textContent = '보험료를 매기는 달 수. 비워두면 자동 계산'; return err(pane, '건강보험 퇴직정산 결과', (o.join && o.retire) ? '퇴직일이 입사일보다 빨라요. 날짜를 확인해주세요.' : '입사일과 퇴직일을 넣어주세요.'); }
       if (mm.year !== 2026) return err(pane, '건강보험 퇴직정산 결과', '이 계산기는 2026년 요율 기준이라 2026년 퇴직만 계산할 수 있어요.');
       var midJoin = C.D(o.join).getUTCFullYear() === mm.year && C.D(o.join).getUTCDate() !== 1;
       info.textContent = '자동: ' + (mm.workStart + 1) + '월 ~ ' + (mm.endMonth + 1) + '월, ' + mm.workMonths + '개월';
@@ -324,6 +324,7 @@
       var notes = [];
       notes.push([r.diff > 0 ? '퇴사 달 급여에서 근로자분 ' + won(r.diff) + '원을 추가로 떼고, 회사도 같은 금액을 추가로 내요.' : r.diff < 0 ? '근로자에게 ' + won(-r.diff) + '원을 돌려주고, 회사분도 같은 금액을 돌려받아요.' : '정산할 차액이 없어요.', r.diff > 0 ? 'w' : 'ok']);
       if (r.diff > 0) notes.push(['추가로 낼 근로자분이 보수월액보험료 하한액 이상이면 회사 신청으로 12회 이내 분할납부할 수 있어요.']);
+      notes.unshift(['모의계산은 실제 퇴직정산 금액이 아니라 모의계산이니, 꼭 참고 정도만 하시길 바랍니다.', 'w']);
       notes.push(['정산 보수월액은 보수총액 ÷ 근무월수, 내야 할 보험료는 월 보험료(10원 미만 버림) × 부과월수로 계산했어요.']);
       notes.push([ROUNDNOTE]);
       show(pane, { title: '건강보험 퇴직정산 모의계산 결과', cond: o.join + ' 입사 · ' + o.retire + ' 퇴직 · 근무월수 ' + months + '개월 · 부과월수 ' + charge + '개월 · 보수총액 ' + won(o.total) + '원',
