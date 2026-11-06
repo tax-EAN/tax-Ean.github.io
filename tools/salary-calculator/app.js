@@ -386,6 +386,11 @@
       var months = buildDinsRows(pane, o);
       var T = '일용직 국민연금·건강보험 판단 결과';
       if (!months) { $('.wlabel', pane).textContent = ''; return err(pane, T, o.start ? '근로 종료일을 넣거나 "아직 근로 중"을 체크해주세요.' : '근로 시작일과 종료일을 넣어주세요.'); }
+      // 첫 달 최초 근로일 = 근로 시작일, 마지막 달 최종 근로일 = 근로 종료일(자동, 고칠 수 없음)
+      $$('.dinswrap input[data-k$="f"], .dinswrap input[data-k$="l"]', pane).forEach(function (el) { if (el.readOnly) { el.readOnly = false; el.value = ''; } });
+      var sD = C.D(o.start), eD = o.ongoing ? null : C.D(o.end);
+      var fEl = $('[data-k="r' + months[0].key + 'f"]', pane); if (fEl) { fEl.value = sD.getUTCDate(); fEl.readOnly = true; }
+      if (eD) { var lEl = $('[data-k="r' + months[months.length - 1].key + 'l"]', pane); if (lEl) { lEl.value = eD.getUTCDate(); lEl.readOnly = true; } }
       o = read(pane);
       var rows = months.map(function (mm) { var k = 'r' + mm.key; return { y: mm.y, m: mm.m, days: o[k + 'd'] || 0, first: o[k + 'f'] || 0, last: o[k + 'l'] || 0, hours: o[k + 'h'] || 0, income: o[k + 'i'] || 0 }; });
       var r = C.dailyInsurance({ start: o.start, end: o.end, ongoing: o.ongoing, cons: o.kind === 'cons', birth: o.birth, rows: rows, manHI: o.manHI, npWish: o.npWish });
@@ -408,11 +413,11 @@
       var mrows = [];
       r.wins.forEach(function (w, n) {
         var st = r.episodes[n].start;
-        mrows.push({ c: [['건강보험 첫 1개월' + (n ? '(재근로)' : ''), fmt(st).slice(2) + '~' + fmt(w.wEnd).slice(2) + (w.amb ? ' · 일부 판단 불가' : '')], w.sure + (w.amb ? '+' + w.maybe : '') + '일', '', '', w.v === null ? '?' : w.v ? '충족' : '미충족', '—'] });
+        mrows.push({ c: [['건강보험 첫 1개월' + (n ? '(재근로)' : ''), fmt(st).slice(2) + '~' + fmt(w.wEnd).slice(2) + (w.amb ? ' · 일부 판단 불가' : '') + (w.how === '직접 선택' ? ' · 직접 선택' : '')], w.sure + (w.amb ? '+' + w.maybe : '') + '일', '', '', '', '', w.v === null ? '?' : w.v ? '충족' : '미충족', '—'] });
       });
       r.months.forEach(function (x, n) {
         var first = x.y === C.D(o.start).getUTCFullYear() && x.m === C.D(o.start).getUTCMonth();
-        mrows.push({ c: [[x.y + '.' + ('0' + (x.m + 1)).slice(-2), first ? '시작일~말일' : ''], (x.r.days || 0) + '일', wonD(x.r.hours || 0), won(x.r.income || 0), x.hi ? '8일 이상' : '8일 미만', x.np ? '충족' : '미충족'] });
+        mrows.push({ c: [[x.y + '.' + ('0' + (x.m + 1)).slice(-2), first ? '시작일~말일' : ''], (x.r.days || 0) + '일', x.r.first ? x.r.first + '일' : '-', x.r.last ? x.r.last + '일' : '-', wonD(x.r.hours || 0), won(x.r.income || 0), x.hi ? '8일 이상' : '8일 미만', x.np ? '충족' : '미충족'] });
       });
       var notes = [];
       var target = r.hi.some(function (x) { return x.acq; }) || r.np.some(function (x) { return x.acq; });
@@ -427,7 +432,7 @@
       show(pane, { title: T, cond: o.start + ' ~ ' + (o.ongoing ? '근로 중' : o.end) + ' · ' + (o.kind === 'cons' ? '건설' : '일반') + (o.birth ? ' · 생년월일 입력' : ''),
         blocks: [
           { t: 'table', title: '판단 결과', head: ['구분', '판단', '취득일', '상실일', '근거'], num: [], rows: res },
-          { t: 'table', title: '달별 요건', head: ['근로월', '근로일수', '근로시간', '소득', '건강보험', '국민연금'], num: [1, 2, 3], rows: mrows }],
+          { t: 'table', title: '달마다 일한 내용과 요건', head: ['근로월', '근로일수', '최초', '최종', '근로시간', '소득', '건강보험', '국민연금'], num: [1, 2, 3, 4, 5], rows: mrows }],
         notes: notes });
     },
 
