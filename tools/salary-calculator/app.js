@@ -389,8 +389,18 @@
       // 첫 달 최초 근로일 = 근로 시작일, 마지막 달 최종 근로일 = 근로 종료일(자동, 고칠 수 없음)
       $$('.dinswrap input[data-k$="f"], .dinswrap input[data-k$="l"]', pane).forEach(function (el) { if (el.readOnly) { el.readOnly = false; el.value = ''; } });
       var sD = C.D(o.start), eD = o.ongoing ? null : C.D(o.end);
-      var fEl = $('[data-k="r' + months[0].key + 'f"]', pane); if (fEl) { fEl.value = sD.getUTCDate(); fEl.readOnly = true; }
-      if (eD) { var lEl = $('[data-k="r' + months[months.length - 1].key + 'l"]', pane); if (lEl) { lEl.value = eD.getUTCDate(); lEl.readOnly = true; } }
+      function fix(key, s, v) { var el = $('[data-k="r' + key + s + '"]', pane); if (el) { el.value = v; el.readOnly = true; } }
+      function daysOf(key) { return num(($('[data-k="r' + key + 'd"]', pane) || {}).value); }
+      var fk = months[0].key, lk = months[months.length - 1].key, sDay = sD.getUTCDate();
+      fix(fk, 'f', sDay);                                                          // 첫 달 최초 근로일 = 근로 시작일
+      var sMonthEnd = new Date(Date.UTC(sD.getUTCFullYear(), sD.getUTCMonth() + 1, 0)).getUTCDate();
+      if (sDay === sMonthEnd || daysOf(fk) === 1) fix(fk, 'l', sDay);              // 말일 시작이거나 그 달 1일만 일하면 최종 = 시작일
+      if (eD) {
+        var eDay = eD.getUTCDate();
+        fix(lk, 'l', eDay);                                                        // 마지막 달 최종 근로일 = 근로 종료일
+        if (fk === lk) fix(fk, 'l', eDay);
+        else if (eDay === 1 || daysOf(lk) === 1) fix(lk, 'f', eDay);               // 1일 종료이거나 그 달 1일만 일하면 최초 = 종료일
+      }
       o = read(pane);
       var rows = months.map(function (mm) { var k = 'r' + mm.key; return { y: mm.y, m: mm.m, days: o[k + 'd'] || 0, first: o[k + 'f'] || 0, last: o[k + 'l'] || 0, hours: o[k + 'h'] || 0, income: o[k + 'i'] || 0 }; });
       var r = C.dailyInsurance({ start: o.start, end: o.end, ongoing: o.ongoing, cons: o.kind === 'cons', birth: o.birth, rows: rows, manHI: o.manHI, npWish: o.npWish });
