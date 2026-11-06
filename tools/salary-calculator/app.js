@@ -411,7 +411,15 @@
       var res = [];
       function lines(name, list, exempt) {
         if (exempt) return res.push({ c: [name, '제외', '-', '-', exempt] });
-        if (!list.length) return res.push({ c: [name, '비대상', '-', '-', name === '건강보험' ? '1개월 이상 근로하면서 8일 이상 일한 달이 없음' : '근로 시작 월과 다음 달을 모두 채우지 못했고(1개월 이상 계속 근로 요건), 그 뒤 요건을 채운 달도 없음'] });
+        if (!list.length) {
+          var why = '1개월 이상 근로하면서 8일 이상 일한 달이 없음';
+          if (name === '국민연금') {
+            var m0 = r.months[0], m1 = r.months[1];
+            why = m0 && m0.np ? '근로 시작 월(시작일~말일)은 충족했지만 다음 달' + (m1 ? '(' + m1.y + '.' + (m1.m + 1) + '월)' : '') + ' 1일~말일 요건(8일·' + (o.kind === 'cons' ? '' : '60시간·') + '220만원) 미충족 → 1개월 이상 계속 근로 요건 미충족'
+              : '근로 시작 월과 그 뒤 어느 달에도 요건(8일·' + (o.kind === 'cons' ? '' : '60시간·') + '220만원)을 채우지 않음';
+          }
+          return res.push({ c: [name, '비대상', '-', '-', why] });
+        }
         list.forEach(function (x, n) {
           if (x.unknown) return res.push({ c: [name, '판단 필요', '-', '-', '첫 1개월이 두 달에 걸쳐 자동 판단이 안 돼요. 위 3번에서 예/아니오를 골라주세요.'], cls: 'hl' });
           res.push({ c: [n ? name + '(' + (n + 1) + ')' : name, n ? '재취득' : '대상', fmt(x.acq), x.lost ? fmt(x.lost) : '근로 중', x.basis] });
@@ -430,7 +438,9 @@
         mrows.push({ c: [[x.y + '.' + ('0' + (x.m + 1)).slice(-2), first ? '시작일~말일' : ''], (x.r.days || 0) + '일', x.r.first ? x.r.first + '일' : '-', x.r.last ? x.r.last + '일' : '-', wonD(x.r.hours || 0), won(x.r.income || 0), x.hi ? '8일 이상' : '8일 미만', x.np ? '충족' : '미충족'] });
       });
       var notes = [];
-      var target = r.hi.some(function (x) { return x.acq; }) || r.np.some(function (x) { return x.acq; });
+      var hiOn = r.hi.some(function (x) { return x.acq; }), npOn = !r.npExempt && r.np.some(function (x) { return x.acq; });
+      var target = hiOn || npOn;
+      notes.push([hiOn && npOn ? '건강보험과 국민연금 모두 가입 대상이에요.' : hiOn ? '건강보험만 가입 대상이에요. 국민연금은 대상이 아니에요.' : npOn ? '국민연금만 가입 대상이에요. 건강보험은 대상이 아니에요.' : '건강보험·국민연금 모두 가입 대상이 아니에요.', target ? 'w' : 'ok']);
       notes.push([target ? '국민연금·건강보험 확인 대상이에요. 지급하기 전 꼭 확인하시길 바랍니다.' : '국민연금·건강보험 확인 대상의 경우, 지급하기 전 꼭 확인하시길 바랍니다.', 'w']);
       if (r.tax.status === 'regular') notes.push(['같은 회사에 ' + (o.kind === 'cons' ? '1년' : '3개월') + ' 이상 계속 고용됐어요. 일용직이 아니라 상용직으로 전환해야 해요.', 'w']);
       if (r.age60 && !r.npExempt && r.age60 > C.D(o.start) && (!e2() || r.age60 <= e2())) notes.push(['근로기간 중 ' + fmt(r.age60) + '에 만 60세가 돼요. 국민연금 상실 여부를 확인해주세요.']);
