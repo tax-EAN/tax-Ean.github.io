@@ -242,6 +242,74 @@
   }
   function hiMonthlyPaid(base) { var hi = Math.min(RATES.hi.capEach, floor10(base * RATES.hi.rate)); return { hi: hi, ltc: floor10(hi * RATES.ltc.incomeRate / RATES.hi.total) }; }
 
+  /* ---------- 일용직 국민연금·건강보험 판단 ---------- */
+  // o: {start, end, ongoing, cons(건설), birth, rows:[{y,m,days,first,last,hours,income}], manHI, manNP('auto'|'yes'|'no'), today}
+  function dailyInsurance(o) {
+    var a = D(o.start), e = o.ongoing ? null : D(o.end);
+    if (!a || (!o.ongoing && (!e || e < a))) return { error: '전체 근로기간을 확인해주세요.' };
+    var PAY = 2200000;
+    function periodEnd(st, n) {                                     // n개월 기간의 마지막 날(민법 기간 계산: 해당일 전날, 해당일이 없으면 그 달 말일)
+      var y = st.getUTCFullYear(), m = st.getUTCMonth() + n, ty = y + Math.floor(m / 12), tm = ((m % 12) + 12) % 12;
+      return st.getUTCDate() > dim(ty, tm) ? new Date(Date.UTC(ty, tm + 1, 0)) : addDays(new Date(Date.UTC(ty, tm, st.getUTCDate())), -1);
+    }
+    var wEnd = periodEnd(a, 1);                                     // 첫 1개월
+    var rows = o.rows || [];
+    function npMeets(d, h, inc) { return d >= 8 || (!o.cons && h >= 60) || inc >= PAY; }
+    // 첫 1개월 집계(달 중간에 걸치는 달은 최초·최종 근로일로 판단)
+    var sure = { d: 0, h: 0, inc: 0 }, maybe = { d: 0, h: 0, inc: 0 }, ambiguous = false;
+    rows.forEach(function (r) {
+      var ms = new Date(Date.UTC(r.y, r.m, 1)), me = new Date(Date.UTC(r.y, r.m + 1, 0));
+      if (ms > wEnd || !(r.days > 0)) return;
+      if (me <= wEnd) { sure.d += r.days; sure.h += r.hours || 0; sure.inc += r.income || 0; return; }
+      var cut = wEnd.getUTCDate();
+      if (r.first && r.first > cut) return;                      // 이 달 근로가 모두 첫 1개월 뒤
+      if (r.last && r.last <= cut) { sure.d += r.days; sure.h += r.hours || 0; sure.inc += r.income || 0; return; }
+      ambiguous = true; maybe.d += r.days; maybe.h += r.hours || 0; maybe.inc += r.income || 0;
+    });
+    function judge(test, man) {
+      if (man === 'yes') return { v: true, how: '직접 선택' };
+      if (man === 'no') return { v: false, how: '직접 선택' };
+      if (test(sure.d, sure.h, sure.inc)) return { v: true, how: '자동' };
+      if (!ambiguous || !test(sure.d + maybe.d, sure.h + maybe.h, sure.inc + maybe.inc)) return { v: false, how: '자동' };
+      return { v: null, how: '판단 필요' };
+    }
+    var fHI = judge(function (d) { return d >= 8; }, o.manHI);
+    var fNP = judge(npMeets, o.manNP);
+    // 첫 1개월 다음 달부터 달력 월 단위 판단
+    var monthly = rows.filter(function (r) { return new Date(Date.UTC(r.y, r.m, 1)) > wEnd; }).map(function (r) {
+      return { y: r.y, m: r.m, hi: (r.days || 0) >= 8, np: npMeets(r.days || 0, r.hours || 0, r.income || 0), r: r };
+    });
+    var lastDay = e;
+    function decide(first, key) {
+      if (first.v === null) return { status: 'unknown' };
+      var acq = null, basis = '', lost = null;
+      if (first.v) { acq = a; basis = '첫 1개월 충족 → 최초 근로일 취득'; }
+      var i = 0;
+      if (!acq) {
+        for (; i < monthly.length; i++) if (monthly[i][key]) break;
+        if (i >= monthly.length) return { status: 'no', basis: '첫 1개월 미충족, 이후에도 요건을 채운 달이 없음' };
+        acq = new Date(Date.UTC(monthly[i].y, monthly[i].m, 1)); basis = '첫 1개월 미충족 → ' + monthly[i].y + '.' + (monthly[i].m + 1) + '월 요건 충족, 그 달 1일 취득';
+        i++;
+      }
+      for (; i < monthly.length; i++) if (!monthly[i][key]) { lost = new Date(Date.UTC(monthly[i].y, monthly[i].m, 1)); basis += ' / ' + monthly[i].y + '.' + (monthly[i].m + 1) + '월 미충족, 그 달 1일 상실'; break; }
+      if (!lost && lastDay) {
+        if (first.v && acq === a) lost = addDays(lastDay, 1);
+        else { var lm = monthly[monthly.length - 1]; lost = lm ? new Date(Date.UTC(lm.y, lm.m + 1, 1)) : addDays(lastDay, 1); }
+      }
+      return { status: 'yes', acq: acq, lost: lost, basis: basis };
+    }
+    var hi = decide(fHI, 'hi'), np = decide(fNP, 'np');
+    // 국민연금: 만 60세 이상 제외
+    var age60 = null, b = D(o.birth);
+    if (b) { age60 = addMonths(b, 720); if (age60 <= a) np = { status: 'exempt', basis: '근로 시작일에 이미 만 60세 이상이라 국민연금 가입 대상이 아님' }; }
+    // 소득세: 일용/상용
+    var limit = periodEnd(a, o.cons ? 12 : 3), tax;
+    if (o.ongoing) tax = { status: 'watch', limit: limit, basis: '근로 중 · ' + ymd(limit) + '까지 계속 고용되면 ' + (o.cons ? '1년' : '3개월') + ' 이상이 되어 상용근로자로 전환' };
+    else if (e < limit) tax = { status: 'daily', limit: limit, basis: (o.cons ? '1년' : '3개월') + ' 미만 → 일용근로자(계속고용 만료일 ' + ymd(limit) + ', 만료 ' + (daysBetween(e, limit) - 1) + '일 전 종료)' };
+    else tax = { status: 'regular', limit: limit, basis: (o.cons ? '1년' : '3개월') + ' 이상 계속 고용(' + ymd(limit) + '까지 근무) → 상용근로자로 전환해야 함' };
+    return { wEnd: wEnd, first: { hi: fHI, np: fNP, sure: sure, maybe: maybe, ambiguous: ambiguous }, monthly: monthly, hi: hi, np: np, tax: tax, age60: age60 };
+  }
+
   /* ---------- 날짜 ---------- */
   function D(s) { if (!s) return null; var p = String(s).split('-'); if (p.length < 3) return null; var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])); return isNaN(d) ? null : d; }
   function ymd(d) { return d.toISOString().slice(0, 10); }
@@ -390,7 +458,7 @@
     RATES: RATES, INDUSTRY: INDUSTRY, floor10: floor10, unit: unit,
     tableTax: tableTax, incomeTax: incomeTax, kidDeduction: kidDeduction, nontaxSplit: nontaxSplit,
     salary: salary, salaryReverse: salaryReverse, daily: daily, dailyReverse: dailyReverse,
-    biz: biz, bizReverse: bizReverse, etc: etc, etcReverse: etcReverse, holidayPay: holidayPay, annualLeave: annualLeave, hiMonths: hiMonths, hiSettle: hiSettle, hiMonthlyPaid: hiMonthlyPaid, prorate: prorate, monthlyHours: monthlyHours,
+    biz: biz, bizReverse: bizReverse, etc: etc, etcReverse: etcReverse, holidayPay: holidayPay, annualLeave: annualLeave, hiMonths: hiMonths, hiSettle: hiSettle, dailyInsurance: dailyInsurance, addMonths: addMonths, hiMonthlyPaid: hiMonthlyPaid, prorate: prorate, monthlyHours: monthlyHours,
     averageWage: averageWage, avgSegments: avgSegments, wageInPeriod: wageInPeriod, monthsDiff: monthsDiff, retirementTax: retirementTax, severance: severance,
     leavePay: leavePay, overtime: overtime, OT: OT, D: D, ymd: ymd, daysBetween: daysBetween
   };
