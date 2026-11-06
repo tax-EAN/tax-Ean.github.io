@@ -444,6 +444,7 @@ dialog.imgdlg::backdrop{background:rgba(0,0,0,.45)}
           <label class="f"><span data-lbl="npq">8일·60시간·220만원 중 하나 이상(국민연금)</span><select data-k="manNP"><option value="auto" selected>자동</option><option value="yes">예</option><option value="no">아니오</option></select></label>
         </div>
         <p class="hint">"자동"은 달별 숫자로 계산해요. 첫 1개월이 두 달에 걸쳐 판단할 수 없으면 결과에 "판단 필요"가 나오니, 그때 "예/아니오"를 골라주세요.</p>
+        <label class="chk"><input type="checkbox" data-k="npWish">국민연금: 최종 근로월이 요건 미달일 때, 사용자·근로자가 원해서 다음 달 1일에 상실해요</label>
       </div>
     </div>
     <div class="result" data-out></div>
@@ -453,7 +454,9 @@ dialog.imgdlg::backdrop{background:rgba(0,0,0,.45)}
     <ul>
       <li><b>건강보험</b>: 1개월 이상 계속 일하면서 한 달에 <b>8일 이상</b> 일하면 직장가입자예요.</li>
       <li><b>국민연금</b>: 1개월 이상 계속 일하면서 한 달에 <b>8일 이상</b> 또는 <b>60시간 이상</b> 일하거나 소득이 <b>220만원 이상</b>이면 사업장가입자예요. <b>건설현장은 60시간 기준이 없고</b> 8일 또는 소득 기준만 봐요.</li>
-      <li>첫 1개월(근로 시작일부터 한 달)에 요건을 채우면 <b>최초 근로일</b>에 취득하고, 못 채우면 그 뒤 요건을 채운 <b>달의 1일</b>에 취득해요. 요건을 못 채운 달이 오면 그 달 1일에 상실해요.</li>
+      <li><b>취득일</b>: 최초 근로일부터 1개월 동안 요건을 채우면 <b>최초 근로일</b>, 못 채우면 그 뒤 요건을 채운 <b>달의 1일</b>이에요.</li>
+      <li><b>건강보험 상실일</b>: 1일에 취득했다면 8일 미만인 달의 <b>1일</b>. 1일이 아닌 날 취득했다면, 최초 근로일이 속한 달의 다음 달이 8일 미만이면 <b>그 달 최종 근로일 다음 날</b>(다다음 달 8일 이상이면 유지), 그 뒤 달이 8일 미만이면 <b>그 달 1일</b>. 근로가 끝나면 최종 근로일 다음 날이에요.</li>
+      <li><b>국민연금 상실일</b>: 최종 근로월에 요건을 채웠으면 <b>다음 달 1일</b>, 못 채웠으면 <b>그 달 1일</b>(사용자·근로자가 원하면 다음 달 1일)이에요. 근로 중간에 요건을 못 채운 달이 있어도 그 달 1일에 상실해요.</li>
       <li><b>세법상 일용근로자</b>: 같은 회사에 3개월 이상(건설공사는 1년 이상) 계속 고용되면 일용직이 아니라 상용직으로 전환해야 해요.</li>
       <li>자세한 부분은 관련 노무 사무실을 이용해주세요.</li>
     </ul>
@@ -829,8 +832,8 @@ dialog.imgdlg::backdrop{background:rgba(0,0,0,.45)}
   </div>
 </dialog>
 <div class="toast" role="status" aria-live="polite"></div>
-<script src="taxtable-2026.js?v=202611061048"></script>
-<script src="calc.js?v=202611061048"></script>
-<script src="app.js?v=202611061048"></script>
+<script src="taxtable-2026.js?v=202611061126"></script>
+<script src="calc.js?v=202611061126"></script>
+<script src="app.js?v=202611061126"></script>
 </body>
 </html>

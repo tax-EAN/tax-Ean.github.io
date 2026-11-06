@@ -388,7 +388,7 @@
       if (!months) { $('.wlabel', pane).textContent = ''; return err(pane, '일용직 국민연금·건강보험 판단 결과', o.start ? '근로 종료일을 넣거나 "아직 근로 중"을 체크해주세요.' : '근로 시작일과 종료일을 넣어주세요.'); }
       o = read(pane);
       var rows = months.map(function (mm) { var k = 'r' + mm.key; return { y: mm.y, m: mm.m, days: o[k + 'd'] || 0, first: o[k + 'f'] || 0, last: o[k + 'l'] || 0, hours: o[k + 'h'] || 0, income: o[k + 'i'] || 0 }; });
-      var r = C.dailyInsurance({ start: o.start, end: o.end, ongoing: o.ongoing, cons: o.kind === 'cons', birth: o.birth, rows: rows, manHI: o.manHI, manNP: o.manNP });
+      var r = C.dailyInsurance({ start: o.start, end: o.end, ongoing: o.ongoing, cons: o.kind === 'cons', birth: o.birth, rows: rows, manHI: o.manHI, manNP: o.manNP, npWish: o.npWish });
       if (r.error) return err(pane, '일용직 국민연금·건강보험 판단 결과', r.error);
       var fmt = function (d) { return d ? C.ymd(d).replace(/-/g, '.') : '-'; };
       $('.wlabel', pane).textContent = '[' + fmt(C.D(o.start)).slice(2) + ' ~ ' + fmt(r.wEnd).slice(2) + ']';
@@ -411,7 +411,8 @@
       if (r.tax.status === 'regular') notes.push(['같은 회사에 ' + (o.kind === 'cons' ? '1년' : '3개월') + ' 이상 계속 고용됐어요. 일용직이 아니라 상용직으로 전환해야 해요.', 'w']);
       if (r.age60 && r.np.status !== 'exempt' && (!r.np.lost || r.age60 < r.np.lost) && r.age60 > C.D(o.start)) notes.push(['근로기간 중 ' + fmt(r.age60) + '에 만 60세가 돼요. 국민연금 상실 여부를 확인해주세요.']);
       notes.push(['국민연금 소득 기준 220만원은 보건복지부장관이 고시하는 금액으로, 바뀌면 다시 확인해야 해요.']);
-      notes.push(['취득·상실일은 일반적인 판단 순서로 계산한 참고값이에요. 실제 신고 전에는 세무사무실에 공유해 확인해주세요.']);
+      notes.push(['1개월(1일~말일) 넘게 전혀 일하지 않다가 다시 일하면 그날을 최초 근로일로 보고 새로 판단해요. 이런 경우는 기간을 나눠 넣어주세요.']);
+      notes.push(['취득·상실일은 참고값이에요. 실제 신고 전에는 세무사무실에 공유해 확인해주세요.']);
       show(pane, { title: '일용직 국민연금·건강보험 판단 결과', cond: o.start + ' ~ ' + (o.ongoing ? '근로 중' : o.end) + ' · ' + (o.kind === 'cons' ? '건설' : '일반') + (o.birth ? ' · 생년월일 입력' : ''),
         blocks: [
           { t: 'table', title: '판단 결과', head: ['구분', '판단', '취득일', '상실일', '근거'], num: [], rows: res },
