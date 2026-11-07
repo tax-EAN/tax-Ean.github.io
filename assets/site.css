@@ -1,0 +1,43 @@
+/* 세무 안내 가이드 공통 (2026.11 2차 개편) – 모든 페이지 맨 위 머리줄 + 가이드·계산기 공통 색 */
+:root{
+  --site-bg:#ffffff; --site-ink:#111418; --site-muted:#59606B; --site-line:#E6E8EC; --site-band:#F5F7FB;
+  --site-accent:#1F4FD6; --site-accent-soft:#EEF2FD;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --site-bg:#14171c; --site-ink:#e8eaee; --site-muted:#a3a9b3; --site-line:#2b3038; --site-band:#1a1f27;
+  --site-accent:#9DB4FF; --site-accent-soft:#1d2740;}}
+:root[data-theme="dark"]{
+  --site-bg:#14171c; --site-ink:#e8eaee; --site-muted:#a3a9b3; --site-line:#2b3038; --site-band:#1a1f27;
+  --site-accent:#9DB4FF; --site-accent-soft:#1d2740;}
+
+/* 머리줄 */
+.site-bar{background:var(--site-bg);border-bottom:1px solid var(--site-line);box-sizing:border-box;font-family:"IBM Plex Sans KR","Noto Sans KR","Malgun Gothic",sans-serif}
+.site-bar .in{max-width:1120px;margin:0 auto;height:60px;display:flex;align-items:center;gap:14px;
+  padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.site-bar .brand{display:flex;align-items:center;gap:10px;color:var(--site-ink);text-decoration:none;font-weight:700;font-size:16px}
+.site-bar .mark{width:28px;height:28px;border-radius:8px;background:var(--site-accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+:root[data-theme="dark"] .site-bar .mark{color:#14171c}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .site-bar .mark{color:#14171c}}
+.site-bar nav{margin-left:auto;display:flex;gap:2px}
+.site-bar nav a{padding:8px 10px;border-radius:8px;color:var(--site-muted);text-decoration:none;font-size:15px}
+.site-bar nav a:hover{color:var(--site-accent);background:var(--site-accent-soft)}
+@media print{.site-bar{display:none}}
+
+/* 가이드·계산기 공통 색: 흰 바탕 + 파랑 강조 */
+body.g-page{--bg:var(--site-bg);--paper:var(--site-bg)}
+body.g-car,body.g-calc{--accent:var(--site-accent);--accent-soft:var(--site-accent-soft)}
+body.g-page .eyebrow{color:var(--site-accent);font-weight:700;letter-spacing:0}
+
+/* 제목 영역: 화면 끝까지 연한 띠 */
+body.g-page .hero,body.g-inv .wrap>header{background:var(--site-band);box-shadow:0 0 0 100vmax var(--site-band);clip-path:inset(0 -100vmax);padding-block:28px 30px}
+body.g-page h1{font-size:clamp(1.75rem,4.6vw,2.5rem);letter-spacing:-.03em;line-height:1.3}
+@media print{body.g-page .hero,body.g-inv .wrap>header{background:none;box-shadow:none;clip-path:none;padding-block:0}}
+
+/* 섹션 번호: 굵은 파랑 */
+body.g-car .no,body.g-inv h2 .no{color:var(--site-accent);font-family:"IBM Plex Sans KR","Noto Sans KR",sans-serif;font-weight:700}
+body.g-inv h2 .no{font-size:1em;margin-right:4px}
+
+/* 머리줄은 화면 끝까지, 제목 띠와 붙이기 */
+body.g-page .site-bar{width:100vw;margin-left:calc(50% - 50vw)}
+body.g-car .wrap,body.g-inv .wrap,body.g-calc .page{padding-top:0}
+body.g-calc .hero{padding-top:28px}
