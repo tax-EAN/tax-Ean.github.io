@@ -41,3 +41,12 @@ body.g-inv h2 .no{font-size:1em;margin-right:4px}
 body.g-page .site-bar{width:100vw;margin-left:calc(50% - 50vw)}
 body.g-car .wrap,body.g-inv .wrap,body.g-calc .page{padding-top:0}
 body.g-calc .hero{padding-top:28px}
+
+/* 업무용승용차: 따뜻한 회색 톤 → 다른 페이지와 같은 밝은 톤 */
+@media not print{
+body.g-car{--ink:#1A1D23;--muted:#5B616E;--line:#E6E8EC;--soft:#F5F7FB;--warn:#C62828;--warn-soft:#FDF0EE;--ok:#1C7A4A}
+:root[data-theme="dark"] body.g-car{--ink:#e8eaee;--muted:#a3a9b3;--line:#2b3038;--soft:#1b2027;--warn:#ff8a80;--warn-soft:#3a1f1e;--ok:#7fd6a8}
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) body.g-car{--ink:#e8eaee;--muted:#a3a9b3;--line:#2b3038;--soft:#1b2027;--warn:#ff8a80;--warn-soft:#3a1f1e;--ok:#7fd6a8}}
+body.g-car table{border-top-width:1.5px}
+body.g-car .box{border-radius:10px}
