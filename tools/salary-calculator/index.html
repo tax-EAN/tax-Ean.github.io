@@ -713,25 +713,29 @@ dialog.imgdlg::backdrop{background:rgba(0,0,0,.45)}
 
 <!-- 일할계산 -->
 <section class="pane" id="prorate" data-title="일할계산" hidden>
-  <div class="pane-head"><h2>입사·퇴사한 달 일할계산</h2><p>달 중간에 입사하거나 퇴사했을 때 근무한 날만큼 월급을 나눠 계산해요. 같은 달 안의 기간만 넣어주세요.</p></div>
+  <div class="pane-head"><h2>입사·퇴사한 달 일할계산</h2><p>달 중간에 입사하거나 퇴사했을 때 근무한 날만큼 월급을 나눠 계산하고, 그 달 4대보험 근로자 부담분도 함께 계산해요. 같은 달 안의 기간만 넣어주세요.</p></div>
   <div class="cols">
     <div class="form">
       <div class="fs"><h3>기간</h3>
         <div class="g2">
-          <label class="f"><span>근무 시작일</span><input type="date" data-k="s" value="2026-10-06"></label>
-          <label class="f"><span>근무 종료일</span><input type="date" data-k="e" value="2026-10-31"></label>
+          <label class="f"><span>근무 시작일</span><input type="date" data-k="s"></label>
+          <label class="f"><span>근무 종료일</span><input type="date" data-k="e"></label>
           <label class="f full"><span>계산 방식</span><select data-k="method"><option value="calendar" selected>역일수 기준 — 근무 날수 ÷ 그 달 날수</option><option value="fixed30">30일 기준 — 근무 날수 ÷ 30일</option><option value="weekday">근무일 기준 — 근무한 평일 ÷ 그 달 평일(월~금)</option></select><small>취업규칙이나 근로계약서에 정한 방식이 있으면 그 방식을 따라주세요.</small></label>
         </div>
       </div>
       <div class="fs"><h3>월 금액(한 달 전체 기준)</h3>
         <div class="g2">
-          <label class="f"><span>기본급</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_base" value="2300000"><em>원</em></div></label>
-          <label class="f"><span>연장수당</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_ot"><em>원</em></div></label>
-          <label class="f"><span>휴일수당</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_hol"><em>원</em></div></label>
-          <label class="f"><span>기타 수당</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_etc"><em>원</em></div></label>
-          <label class="f"><span>식대(비과세)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_meal" value="200000"><em>원</em></div></label>
-          <label class="f"><span>자가운전보조금(비과세)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_car"><em>원</em></div></label>
-          <label class="f"><span>보육수당(비과세)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_child"><em>원</em></div></label>
+          <label class="f"><span>기본급(과세)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_base" value="0"><em>원</em></div></label>
+          <label class="f"><span>식대(비과세)</span><div class="in"><input type="text" inputmode="numeric" class="money" data-k="i_meal" value="0"><em>원</em></div></label>
+        </div>
+        <input type="hidden" data-k="xc" value="0">
+        <div class="xwrap" style="margin-top:12px"></div>
+        <button class="btn full" type="button" data-act="xadd" style="width:100%;margin-top:10px">+ 수당 추가</button>
+        <small class="muted" style="display:block;margin-top:6px;font-size:.82rem">수당마다 과세·비과세를 고르고, 일할하지 않는 수당(연장·휴일수당 등)은 일할 체크를 풀면 월 금액 그대로 들어가요.</small>
+      </div>
+      <div class="fs"><h3>4대보험</h3>
+        <div class="g2">
+          <label class="f full"><span>입사·퇴사 구분</span><select data-k="ins"><option value="auto" selected>날짜로 자동 판정</option><option value="in">중도입사</option><option value="out">중도퇴사</option></select><small>중도입사는 고용보험만, 중도퇴사는 건강·장기요양·고용보험을 계산해요.</small></label>
         </div>
       </div>
     </div>
@@ -836,9 +840,9 @@ dialog.imgdlg::backdrop{background:rgba(0,0,0,.45)}
 </dialog>
 <div class="toast" role="status" aria-live="polite"></div>
 <script>/* 새 버전이 올라왔는데 브라우저가 예전 화면을 보여주면 한 번 새로고침 */
-(function(){var PV='202611061237';try{fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(t){t=(t||'').trim();if(t&&t!==PV){var k='reloaded-'+t;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}location.reload()}}).catch(function(){})}catch(e){}})();</script>
-<script src="taxtable-2026.js?v=202611061237"></script>
-<script src="calc.js?v=202611061237"></script>
-<script src="app.js?v=202611061237"></script>
+(function(){var PV='202611121355';try{fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(t){t=(t||'').trim();if(t&&t!==PV){var k='reloaded-'+t;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}location.reload()}}).catch(function(){})}catch(e){}})();</script>
+<script src="taxtable-2026.js?v=202611121355"></script>
+<script src="calc.js?v=202611121355"></script>
+<script src="app.js?v=202611121355"></script>
 </body>
 </html>

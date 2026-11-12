@@ -649,16 +649,44 @@
     },
 
     prorate: function (pane, o) {
+      if (!o.s || !o.e) return err(pane, '일할계산 결과', '근무 시작일과 종료일을 넣어주세요.');
       var p = C.prorate(o.s, o.e, o.method);
       if (p.error) return err(pane, '일할계산 결과', p.error);
-      var items = [['기본급', 'i_base'], ['연장수당', 'i_ot'], ['휴일수당', 'i_hol'], ['기타 수당', 'i_etc'], ['식대', 'i_meal'], ['자가운전보조금', 'i_car'], ['보육수당', 'i_child']];
-      var rows = [], tm = 0, tp = 0;
-      items.forEach(function (it) { var a = o[it[1]] || 0; if (!a) return; var v = Math.floor(a * p.ratio + 1e-7); tm += a; tp += v; rows.push({ c: [it[0], won(a), won(v)] }); });
+      var items = [{ n: '기본급', tax: true, a: o.i_base || 0, pr: true }, { n: '식대', tax: false, a: o.i_meal || 0, pr: true }];
+      for (var i = 0; i < (+o.xc || 0); i++) items.push({ n: (o['x' + i + 'n'] || '').trim() || '수당', tax: o['x' + i + 't'] !== '0', a: o['x' + i + 'a'] || 0, pr: o['x' + i + 'p'] !== false });
+      var rows = [], tm = 0, tp = 0, taxP = 0, fixed = false;
+      items.forEach(function (it) {
+        if (!it.a) return;
+        var v = it.pr ? Math.floor(it.a * p.ratio + 1e-7) : it.a;
+        tm += it.a; tp += v; if (it.tax) taxP += v; if (!it.pr) fixed = true;
+        rows.push({ c: [[it.n, (it.tax ? '과세' : '비과세') + (it.pr ? '' : ' · 일할 제외')], won(it.a), won(v)] });
+      });
       rows.push({ c: ['합계', won(tm), won(tp)], cls: 'tot' });
-      show(pane, { title: '일할계산 결과', cond: o.s + ' ~ ' + o.e + ' · ' + p.label,
-        sum: [S('근무', p.num + ' / ' + p.den, o.method === 'weekday' ? '일(평일)' : '일'), S('비율', (p.ratio * 100).toFixed(2), '%'), S('이번 달 지급액(세전)', won(tp), '원', true)],
-        blocks: [{ t: 'table', head: ['항목', '월 금액', '일할 금액'], num: [1, 2], rows: rows }],
-        notes: [['원 단위 미만은 버렸어요.'], ['연장·휴일수당처럼 실제 근무시간으로 계산하는 수당은 일할하지 않고 실제 시간으로 따로 계산하는 경우가 많아요.'], [ROUNDNOTE]] });
+
+      // 4대보험 구분: 1일 시작 + 말일 전 종료 = 중도퇴사, 그 밖에 중간 시작 = 중도입사
+      var sd = C.D(o.s).getUTCDate(), ed = C.D(o.e).getUTCDate(), kind = o.ins;
+      if (kind !== 'in' && kind !== 'out') kind = sd === 1 ? (ed === p.monthDays ? 'full' : 'out') : 'in';
+      var kindName = { in: '중도입사', out: '중도퇴사', full: '한 달 전체 근무' }[kind];
+      var hiOn = kind !== 'in';
+      var hi = hiOn && taxP > 0 ? Math.min(R.hi.capEach, C.floor10(taxP * R.hi.rate)) : 0;
+      var ltc = C.floor10(hi * R.ltc.incomeRate / R.hi.total);
+      var ei = C.floor10(taxP * R.ei.emp), ins = hi + ltc + ei;
+      var off = hiOn ? null : '미부과';
+      var irows = [
+        { c: [['국민연금', '입·퇴사월 정산 없음'], '—', '—', '제외'] },
+        { c: ['건강보험', off ? '—' : won(taxP), off ? '—' : (R.hi.rate * 100).toFixed(3) + '%', off || won(hi)] },
+        { c: ['장기요양보험', off ? '—' : won(hi), off ? '—' : [(R.ltc.ofHi * 100).toFixed(2) + '%', '건강보험료 대비'], off || won(ltc)] },
+        { c: ['고용보험', won(taxP), (R.ei.emp * 100).toFixed(1) + '%', won(ei)] },
+        { c: ['공제 합계', '', '', won(ins)], cls: 'tot' }];
+      var notes = [['원 단위 미만은 버렸어요. 4대보험은 10원 미만을 버렸어요.']];
+      if (fixed) notes.push(['일할 체크를 푼 수당은 월 금액 그대로 넣었어요.']);
+      notes.push(['4대보험은 이번 달 과세 지급액(비과세 제외)으로 계산했어요.'], ['건강보험은 1일 입사가 아니면 입사한 달에는 부과하지 않고, 퇴사한 달에는 부과해요.'],
+        ['국민연금은 입·퇴사한 달에 따로 정산하지 않아 제외했어요.'], ['건강보험 퇴직정산 보험료는 포함하지 않았어요. 따로 확인해주세요.'], [ROUNDNOTE]);
+      show(pane, { title: '일할계산 결과', cond: o.s + ' ~ ' + o.e + ' · ' + p.label + ' · ' + p.num + ' / ' + p.den + (o.method === 'weekday' ? '일(평일)' : '일') + ' (' + (p.ratio * 100).toFixed(2) + '%)',
+        sum: [S('이번 달 지급액(세전)', won(tp)), S('4대보험 공제', won(ins)), S('공제 후 금액(소득세 전)', won(tp - ins), '원', true)],
+        blocks: [{ t: 'table', title: '지급 내역', head: ['항목', '월 금액', '지급 금액'], num: [1, 2], rows: rows },
+          { t: 'table', title: '4대보험 공제(근로자 부담) · ' + kindName, head: ['항목', '기준 금액', '요율', '공제액'], num: [1, 2, 3], rows: irows }],
+        notes: notes });
     },
 
     ot: function (pane, o) {
@@ -739,6 +767,29 @@
       dinsKey = key;
     }
     return months;
+  }
+
+  /* ---------- 일할계산: 추가 수당 줄 ---------- */
+  function proRowsGet(pane) {
+    return $$('.xwrap tr[data-i]', pane).map(function (tr) {
+      return { n: $('[data-f="n"]', tr).value, t: $('[data-f="t"]', tr).value, a: $('[data-f="a"]', tr).value, p: $('[data-f="p"]', tr).checked };
+    });
+  }
+  function proRows(pane, list) {
+    var wrap = $('.xwrap', pane);
+    setK(pane, 'xc', list.length);
+    if (!list.length) { wrap.innerHTML = ''; return; }
+    var h = '<div class="tw"><table class="segin"><thead><tr><th>항목명</th><th>구분</th><th>월 금액</th><th style="text-align:center">일할</th><th></th></tr></thead><tbody>';
+    list.forEach(function (r, i) {
+      var k = 'x' + i;
+      h += '<tr data-i="' + i + '"><td><input type="text" data-f="n" data-k="' + k + 'n" placeholder="직책수당" value="' + esc(r.n) + '" style="text-align:left;min-width:90px"></td>' +
+        '<td><select data-f="t" data-k="' + k + 't" style="height:36px;min-width:84px;padding:4px 26px 4px 8px"><option value="1"' + (r.t !== '0' ? ' selected' : '') + '>과세</option><option value="0"' + (r.t === '0' ? ' selected' : '') + '>비과세</option></select></td>' +
+        '<td><input type="text" inputmode="numeric" class="money" data-f="a" data-k="' + k + 'a" value="' + esc(r.a) + '" style="min-width:96px"></td>' +
+        '<td style="text-align:center"><input type="checkbox" data-f="p" data-k="' + k + 'p" aria-label="일할 적용"' + (r.p ? ' checked' : '') + ' style="width:17px;height:17px;accent-color:var(--accent)"></td>' +
+        '<td><button class="btn" type="button" data-act="xdel" aria-label="이 수당 지우기" style="padding:4px 9px">×</button></td></tr>';
+    });
+    wrap.innerHTML = h + '</tbody></table></div>';
+    $$('input.money', wrap).forEach(bindMoney);
   }
 
   /* ---------- 평균임금: 달별 입력 표 ---------- */
@@ -897,6 +948,8 @@
     if (act === 'link') copyText(stateUrl(pane)).then(function () { toast('이 조건이 담긴 링크를 복사했어요.'); });
     else if (act === 'print') window.print();
     else if (act === 'img') openImage(pane);
+    else if (act === 'xadd') { var xl = proRowsGet(pane); xl.push({ n: '', t: '1', a: '', p: true }); proRows(pane, xl); run(pane); var ni = $$('.xwrap [data-f="n"]', pane).pop(); if (ni) ni.focus(); }
+    else if (act === 'xdel') { var dl = proRowsGet(pane); dl.splice(+b.closest('tr').getAttribute('data-i'), 1); proRows(pane, dl); run(pane); }
     else if (act === 'fill') { fillSegs(pane, null, read(pane)); $$('.segwrap input.money', pane).forEach(function (el) { if (el.value) el.value = won(num(el.value)); }); run(pane); }
   });
 
@@ -906,7 +959,8 @@
     if (ALIAS[id]) { qs = ALIAS[id][1] + (qs ? '&' + qs : ''); id = ALIAS[id][0]; }
     var pane = document.getElementById(id);
     if (pane && qs) { applyState(pane, qs); if (id === 'sev') { buildSegs(pane, read(pane)); applyState(pane, qs); }
-      if (id === 'dins') { buildDinsRows(pane, read(pane)); applyState(pane, qs); } }
+      if (id === 'dins') { buildDinsRows(pane, read(pane)); applyState(pane, qs); }
+      if (id === 'prorate') { var xn = Math.min(30, +read(pane).xc || 0), xl = []; for (var xi = 0; xi < xn; xi++) xl.push({ n: '', t: '1', a: '', p: true }); proRows(pane, xl); applyState(pane, qs); } }
     activate(pane ? id : 'pay');
   }
   window.addEventListener('hashchange', fromHash);
