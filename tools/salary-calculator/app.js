@@ -834,26 +834,51 @@
 
   /* ---------- 요율표 ---------- */
   function ratesHtml() {
-    var ex = R.ei.extra, h = '';
-    h += '<div class="blk"><h4>4대보험</h4><div class="tw"><table class="t"><thead><tr><th>구분</th><th class="n">근로자</th><th class="n">회사</th><th class="n">합계</th><th>기준</th></tr></thead><tbody>' +
-      '<tr><td>국민연금</td><td class="n">4.75%</td><td class="n">4.75%</td><td class="n">9.5%</td><td>기준소득월액 ' + won(R.np.min) + '원 ~ ' + won(R.np.max) + '원<small>' + R.np.period + '</small></td></tr>' +
-      '<tr><td>건강보험</td><td class="n">3.595%</td><td class="n">3.595%</td><td class="n">7.19%</td><td>근로자 부담 월 상한 ' + won(R.hi.capEach) + '원</td></tr>' +
-      '<tr><td>장기요양보험</td><td class="n" colspan="3" style="text-align:center">건강보험료의 13.14%(소득 대비 0.9448%)</td><td>근로자·회사 반씩</td></tr>' +
-      '<tr><td>고용보험(실업급여)</td><td class="n">0.9%</td><td class="n">0.9%</td><td class="n">1.8%</td><td></td></tr>' +
-      '<tr><td>고용보험(고용안정·직업능력개발)</td><td class="n">—</td><td class="n">0.25~0.85%</td><td class="n"></td><td>회사 규모별(아래 표)</td></tr>' +
-      '<tr><td>산재보험</td><td class="n">—</td><td class="n">업종별</td><td class="n"></td><td>업종 요율 + 출퇴근재해 0.6‰</td></tr></tbody></table></div></div>';
+    var ex = R.ei.extra, Y = C.RATES_Y, a = Y[2026], b = Y[2027], h = '';
+    function p1(x) { return (x * 100).toFixed(1) + '%'; }
+    // 월급 300만원 예시: 엔진으로 2026 · 2027년을 각각 계산
+    var inp = { gross: 3000000, nontax: { meal: 0, car: 0, child: 0, childKids: 1 }, fam: 1, kids: 0, ratio: 100, size: 's150', indRate: 8 };
+    C.useYear(2026); var s6 = C.salary(inp); C.useYear(2027); var s7 = C.salary(inp); C.useYear(2026);
+    function d(x, y) { var v = y - x; return v ? (v > 0 ? '+' : '−') + won(Math.abs(v)) : '—'; }
+    function exRows(p, q, er) {
+      var rows = [], t6 = 0, t7 = 0;
+      [['국민연금', 'np'], ['건강보험', 'hi'], ['장기요양보험', 'ltc'], ['고용보험', 'ei']].forEach(function (x) { var v6 = p[x[1]], v7 = q[x[1]]; t6 += v6; t7 += v7; rows.push({ c: [x[0], won(v6), won(v7), d(v6, v7)] }); });
+      if (er) rows.push({ c: [['산재보험', '업종마다 다름 · 출퇴근 0.6‰ 포함'], '업종별', '업종별', '고시 전'] });
+      rows.push({ c: [er ? ['합계', '산재보험 빼고'] : '합계', won(t6), won(t7), d(t6, t7)], cls: 'tot' });
+      return rows;
+    }
+    var doc = {
+      title: '2027년 4대보험 요율 (2026년과 비교)',
+      cond: '2027년 1월 급여부터 · 고용보험 2.0%는 법 개정 중 · 업종별 산재보험료율은 12월 말 고시 후 반영 예정',
+      sum: [S('국민연금', pc(a.np.rate * 2) + ' → ' + pc(b.np.rate * 2), '', true), S('장기요양보험', pc(a.ltc.ofHi) + ' → ' + pc(b.ltc.ofHi), ''), S('고용보험(실업급여)', p1(a.ei.emp * 2) + ' → ' + p1(b.ei.emp * 2), '')],
+      blocks: [
+        { t: 'table', title: '4대보험 요율 (월 보수 기준)', head: ['구분', '2026년', '2027년', '누가 내나', '변동'], num: [1, 2], rows: [
+          { c: [['국민연금', '기준소득월액 ' + won(R.np.min) + '원 ~ ' + won(R.np.max) + '원 (7월에 바뀜)'], pc(a.np.rate * 2), pc(b.np.rate * 2), '반씩 (각 ' + pc(b.np.rate) + ')', '인상'] },
+          { c: [['건강보험', '근로자 월 상한 ' + won(R.hi.capEach) + '원'], pc(R.hi.total), pc(R.hi.total), '반씩 (각 ' + pc(R.hi.rate) + ')', '동결'] },
+          { c: [['장기요양보험', '건강보험료 × 비율'], pc(a.ltc.ofHi), pc(b.ltc.ofHi), '반씩', '인상'] },
+          { c: ['고용보험(실업급여)', p1(a.ei.emp * 2), p1(b.ei.emp * 2), '반씩 (각 ' + p1(b.ei.emp) + ')', '개정 중'] },
+          { c: ['고용보험(고용안정·직업능력개발)', '0.25~0.85%', '0.25~0.85%', '회사만 · 규모별', '변동 없음'] },
+          { c: [['산재보험', '업종 요율 + 출퇴근 0.6‰'], '업종별', '업종별', '회사만', '고시 전'] }] },
+        { t: 'table', title: '월급 300만원이면 · 근로자가 내는 돈 (월급에서 빠짐)', head: ['구분', '2026년', '2027년', '차이'], num: [1, 2, 3], rows: exRows(s6.emp, s7.emp, false) },
+        { t: 'table', title: '월급 300만원이면 · 회사가 내는 돈', head: ['구분', '2026년', '2027년', '차이'], num: [1, 2, 3], rows: exRows(s6.er, s7.er, true) },
+        { t: 'text', text: '비과세 없음 · 10원 미만 버림. 회사 부담 고용보험은 150인 미만 회사(고용안정·직업능력개발 0.25%) 기준이에요. 산재보험료는 업종마다 요율이 달라서 합계에서 뺐어요. 예: 도소매·음식·숙박업은 8‰ + 출퇴근 0.6‰ → 월급 300만원에 ' + won(s6.er.ind) + '원(2026년 기준).' }
+      ]
+    };
+    DOCS.rates = doc;
+    h += '<div class="result">' + html(doc) + '</div><div class="noprint" style="display:flex;flex-direction:column;gap:22px">';
+    h += '<div class="blk"><h4>근로소득 비과세 한도(월)</h4><div class="tw"><table class="t"><tbody>' +
+      '<tr><td>식대(식사를 따로 제공받지 않는 경우)</td><td class="n">20만원</td></tr><tr><td>자가운전보조금(본인 차량으로 업무 수행, 실제 여비 대신 받는 경우)</td><td class="n">20만원</td></tr><tr><td>출산·보육수당(6세 이하 자녀)</td><td class="n">자녀 1명당 20만원</td></tr></tbody></table></div></div>';
     h += '<div class="blk"><h4>고용보험 회사 추가 부담(고용안정·직업능력개발)</h4><div class="tw"><table class="t"><thead><tr><th>상시 근로자 수</th><th class="n">요율</th></tr></thead><tbody>' +
-      '<tr><td>150인 미만</td><td class="n">' + (ex.s150 * 100) + '%</td></tr><tr><td>150인 이상 우선지원대상기업</td><td class="n">' + (ex.p150 * 100) + '%</td></tr>' +
-      '<tr><td>150인 이상 1,000인 미만(우선지원대상기업 아님)</td><td class="n">' + (ex.u1000 * 100) + '%</td></tr><tr><td>1,000인 이상·국가·지방자치단체</td><td class="n">' + (ex.o1000 * 100) + '%</td></tr></tbody></table></div></div>';
-    h += '<div class="blk"><h4>2026년 사업종류별 산재보험료율</h4><p class="muted" style="font-size:.88rem">단위 ‰(천분율), 1,000원당 내는 금액이에요. 예: 8‰이면 월급 300만원에 24,000원. 모든 업종에 출퇴근재해 요율 0.6‰을 더하고, 회사가 전액 부담해요.</p><div class="tw"><table class="t"><thead><tr><th>사업 종류</th><th class="n">요율</th></tr></thead><tbody>';
+      '<tr><td>150인 미만</td><td class="n">' + pc(ex.s150) + '</td></tr><tr><td>150인 이상 우선지원대상기업</td><td class="n">' + pc(ex.p150) + '</td></tr>' +
+      '<tr><td>150인 이상 1,000인 미만(우선지원대상기업 아님)</td><td class="n">' + pc(ex.u1000) + '</td></tr><tr><td>1,000인 이상·국가·지방자치단체</td><td class="n">' + pc(ex.o1000) + '</td></tr></tbody></table></div></div>';
+    h += '<div class="blk"><h4>사업종류별 산재보험료율 (2026년 기준 · 2027년 고시 후 반영 예정)</h4><p class="muted" style="font-size:.88rem">단위 ‰(천분율), 1,000원당 내는 금액이에요. 예: 8‰이면 월급 300만원에 24,000원. 모든 업종에 출퇴근재해 요율 0.6‰을 더하고, 회사가 전액 부담해요.</p><div class="tw"><table class="t"><thead><tr><th>사업 종류</th><th class="n">요율</th></tr></thead><tbody>';
     C.INDUSTRY.forEach(function (g) {
       if (g[1].length === 1 && g[1][0][0] === g[0]) h += '<tr class="grp"><td>' + esc(g[0]) + '</td><td class="n">' + g[1][0][1] + '‰</td></tr>';
       else { h += '<tr class="grp"><td colspan="2">' + esc(g[0]) + '</td></tr>'; g[1].forEach(function (it) { h += '<tr><td style="padding-left:22px">' + esc(it[0]) + '</td><td class="n">' + it[1] + '‰</td></tr>'; }); }
     });
     h += '</tbody></table></div><p class="muted" style="font-size:.84rem">우리 회사가 어느 사업 종류인지는 근로복지공단의 사업종류 예시표로 정해져요. 사업장 가입 때 받은 산재보험 요율을 확인해주세요.</p></div>';
-    h += '<div class="blk"><h4>근로소득 비과세 한도(월)</h4><div class="tw"><table class="t"><tbody>' +
-      '<tr><td>식대(식사를 따로 제공받지 않는 경우)</td><td class="n">20만원</td></tr><tr><td>자가운전보조금(본인 차량으로 업무 수행, 실제 여비 대신 받는 경우)</td><td class="n">20만원</td></tr><tr><td>출산·보육수당(6세 이하 자녀)</td><td class="n">자녀 1명당 20만원</td></tr></tbody></table></div></div>';
-    h += '<details class="law"><summary>근거</summary><p><b>보건복지부고시 제2026-31호</b> 국민연금 기준소득월액 하한액과 상한액 · <b>고용노동부고시 제2025-91호</b> 2026년도 사업종류별 산재보험료율 · 2026년 건강보험료율 7.19%, 장기요양보험료율 건강보험료의 13.14% · <b>소득세법 제12조제3호러목</b> 식대 · <b>제12조제3호머목</b> 출산·보육수당 · <b>소득세법 시행령 제12조제3호</b> 자가운전보조금</p></details>';
+    h += '<details class="law"><summary>근거</summary><p><b>국민연금법</b> 보험료율 2026년 9.5% · 2027년 10%(해마다 0.5%p 인상) · <b>보건복지부고시 제2026-31호</b> 국민연금 기준소득월액 하한액과 상한액 · 2026 · 2027년 건강보험료율 7.19%(2027년 동결) · 장기요양보험료율 건강보험료의 2026년 13.14%, 2027년 13.90%(소득 대비 0.9994%) · 고용보험 실업급여 보험료율 2027년 2.0%(정부 개편안, 법 개정 중) · <b>고용노동부고시 제2025-91호</b> 2026년도 사업종류별 산재보험료율 · <b>소득세법 제12조제3호러목</b> 식대 · <b>제12조제3호머목</b> 출산·보육수당 · <b>소득세법 시행령 제12조제3호</b> 자가운전보조금</p></details>';
+    h += '</div>';
     return h;
   }
   $('#ratesOut').innerHTML = ratesHtml();
