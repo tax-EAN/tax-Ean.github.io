@@ -18,6 +18,13 @@
   }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function num(v) { v = String(v == null ? '' : v).replace(/[^0-9.\-]/g, ''); var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+  function pc(x) { return +(x * 100).toFixed(3) + '%'; }
+  // 요율 연도: 급여 화면은 [요율 적용 연도], 그 밖에는 입력한 날짜 중 가장 늦은 날의 연도, 날짜가 없으면 오늘
+  function rateYear(o) {
+    if (o.ry === '2026' || o.ry === '2027') return +o.ry;
+    var y = 0; Object.keys(o).forEach(function (k) { var v = o[k]; if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) y = Math.max(y, +v.slice(0, 4)); });
+    return y || new Date().getFullYear();
+  }
   function md(d) { return (d.getUTCMonth() + 1) + '/' + d.getUTCDate(); }
   var WD = ['일', '월', '화', '수', '목', '금', '토'];
   var ROUNDNOTE = '끝전 절사로 인해 실제 금액과 단수 차이가 발생할 수 있어요.';
@@ -35,6 +42,7 @@
       '<label class="f"><span>공제대상 가족 수(본인 포함)</span><div class="in"><input type="text" inputmode="numeric" class="int" data-k="fam" value="1"><em>명</em></div><small>본인과 배우자도 각각 1명</small></label>' +
       '<label class="f"><span>그중 8세~20세 자녀 수</span><div class="in"><input type="text" inputmode="numeric" class="int" data-k="kids" value="0"><em>명</em></div></label>' +
       '<label class="f"><span>소득세 원천징수 비율</span><select data-k="ratio"><option value="100" selected>100%(기본)</option><option value="80">80%</option><option value="120">120%</option></select><small>직원이 신청한 경우에만 80%·120%</small></label>' +
+      '<label class="f"><span>요율 적용 연도</span><select data-k="ry"><option value="auto" selected>자동(오늘 날짜 기준)</option><option value="2026">2026년</option><option value="2027">2027년</option></select><small>2027년 1월 급여부터 2027년 요율</small></label>' +
       '<div class="f" style="justify-content:center;gap:6px"><label class="chk"><input type="checkbox" data-k="noNP">국민연금 제외(만 60세 이상 등)</label><label class="chk"><input type="checkbox" data-k="noEI">고용보험 제외(65세 이후 새로 고용 등)</label></div></div></div>',
     employer: function () {
       var opts = C.INDUSTRY.map(function (g) {
@@ -244,11 +252,11 @@
     if (o.car) left.push(['자가운전보조금', won(o.car)]);
     if (o.child) left.push(['출산·보육수당', won(o.child)]);
     var right = [['국민연금', won(e.np)], ['건강보험', won(e.hi)], ['장기요양보험', won(e.ltc)], ['고용보험', won(e.ei)], ['소득세', won(e.tax)], ['지방소득세', won(e.local)]];
-    var eiRate = o.noEI ? '제외' : '0.9% / ' + (0.9 + R.ei.extra[o.size || 's150'] * 100).toFixed(2).replace(/0$/, '') + '%';
+    var eiRate = o.noEI ? '제외' : pc(R.ei.emp) + ' / ' + ((R.ei.er + R.ei.extra[o.size || 's150']) * 100).toFixed(2).replace(/0$/, '') + '%';
     var ins = [
-      { c: [['국민연금', '기준 ' + won(s.npBase) + '원'], o.noNP ? '제외' : '4.75% / 4.75%', won(e.np), won(r.np), won(e.np + r.np)] },
+      { c: [['국민연금', '기준 ' + won(s.npBase) + '원'], o.noNP ? '제외' : pc(R.np.rate) + ' / ' + pc(R.np.rate), won(e.np), won(r.np), won(e.np + r.np)] },
       { c: [['건강보험', '기준 ' + won(s.hiBase) + '원'], '3.595% / 3.595%', won(e.hi), won(r.hi), won(e.hi + r.hi)] },
-      { c: [['장기요양보험', '건강보험료의 13.14%'], '반씩', won(e.ltc), won(r.ltc), won(e.ltc + r.ltc)] },
+      { c: [['장기요양보험', '건강보험료의 ' + pc(R.ltc.ofHi)], '반씩', won(e.ltc), won(r.ltc), won(e.ltc + r.ltc)] },
       { c: [['고용보험', '회사분에 고용안정·직업능력개발 포함'], eiRate, won(e.ei), won(r.ei), won(e.ei + r.ei)] },
       { c: [['산재보험', selName(pane, 'ind') + ' ' + o.ind + '‰ + 출퇴근 0.6‰'], '회사 전액', '0', won(r.ind), won(r.ind)] },
       { c: ['합계', '', won(e.ins), won(r.sum), won(e.ins + r.sum)], cls: 'tot' }
@@ -256,6 +264,7 @@
     var notes = (extraNotes || []).slice();
     if (s.nontax.excess > 0) notes.push(['비과세 한도를 넘는 ' + won(s.nontax.excess) + '원은 과세 급여로 계산했어요.', 'w']);
     if (!o.npBase && s.taxable > R.np.max) notes.push(['국민연금은 기준소득월액 상한 ' + won(R.np.max) + '원까지만 매겨요(' + R.np.period + ').']);
+    if (R.year === 2027) notes.push(['2027년 요율(국민연금 10% · 장기요양 13.9% · 고용보험 2.0%)로 계산했어요. 고용보험 2.0%는 법 개정 중이라 바뀔 수 있어요.', 'w']);
     notes.push(['소득세는 근로소득 간이세액표(2026.3.1 시행)로 계산했어요. 연말정산 결과와 다를 수 있어요.']);
     notes.push([ROUNDNOTE]);
     return {
@@ -302,7 +311,7 @@
       var mm = C.hiMonths(o.join, o.retire);
       var info = $('.hmh', pane);
       if (!mm) { info.textContent = '보수총액을 나누는 달 수(입사한 달 포함). 비워두면 자동 계산'; $('.hch', pane).textContent = '보험료를 매기는 달 수. 비워두면 자동 계산'; return err(pane, '건강보험 퇴직정산 결과', (o.join && o.retire) ? '퇴직일이 입사일보다 빨라요. 날짜를 확인해주세요.' : '입사일과 퇴직일을 넣어주세요.'); }
-      if (mm.year !== 2026) return err(pane, '건강보험 퇴직정산 결과', '이 계산기는 2026년 요율 기준이라 2026년 퇴직만 계산할 수 있어요.');
+      if (mm.year < 2026 || mm.year > 2027) return err(pane, '건강보험 퇴직정산 결과', '이 계산기는 2026 · 2027년 요율만 있어서 2026 · 2027년 퇴직만 계산할 수 있어요.');
       var midJoin = C.D(o.join).getUTCFullYear() === mm.year && C.D(o.join).getUTCDate() !== 1;
       info.textContent = '자동: ' + (mm.workStart + 1) + '월 ~ ' + (mm.endMonth + 1) + '월, ' + mm.workMonths + '개월';
       $('.hch', pane).textContent = '자동: ' + (mm.startMonth + 1) + '월 ~ ' + (mm.endMonth + 1) + '월, ' + mm.months + '개월' + (midJoin ? ' (1일이 아닌 날 입사해 입사한 달은 보험료를 매기지 않아요)' : '');
@@ -335,7 +344,7 @@
             { c: [['정산 보수월액', '보수총액 ÷ 근무월수'], won(r.monthly)], cls: 'tot' }] },
           { t: 'table', title: '2. 내야 할 보험료(근로자분)', head: ['항목', '월 보험료', '부과월수', '합계'], num: [1, 2, 3], rows: [
             { c: [['건강보험료', '정산 보수월액 × 3.595%'], won(r.hiM), charge, won(r.hiDue)] },
-            { c: [['장기요양보험료', '건강보험료 × 13.14%'], won(r.ltcM), charge, won(r.ltcDue)] }] },
+            { c: [['장기요양보험료', '건강보험료 × ' + pc(R.ltc.ofHi)], won(r.ltcM), charge, won(r.ltcDue)] }] },
           { t: 'table', title: '3. 정산(근로자분)', head: ['항목', '내야 할 보험료', '이미 낸 보험료', '차액'], num: [1, 2, 3], rows: rows }],
         notes: notes });
     },
@@ -364,7 +373,7 @@
         : { wage: wage, days: days, total: one.total * days, ei: one.ei * days, tax: one.tax * days, local: one.local * days, small: one.small, ded: one.ded * days, net: one.net * days }; // 매일 지급
       var blocks = [{ t: 'table', title: '공제 내역', head: ['항목', '1일 기준', days + '일 합계'], num: [1, 2], rows: [
         { c: ['세전 일당 / 지급총액', won(one.total), won(d.total)] },
-        { c: [['고용보험', o.o65 ? '65세 이상 제외' : '0.9%'], won(one.ei), won(d.ei)] },
+        { c: [['고용보험', o.o65 ? '65세 이상 제외' : pc(R.ei.emp)], won(one.ei), won(d.ei)] },
         { c: [['소득세', '(일당 − 15만원) × 6% × 45%'], won(one.tax), won(d.tax)] },
         { c: [['지방소득세', '소득세의 10%'], won(one.local), won(d.local)] },
         { c: ['공제 합계', won(one.ded), won(d.ded)], cls: 'tot' },
@@ -878,7 +887,7 @@
   });
 
   /* ---------- 실행 ---------- */
-  function run(pane) { if (CALC[pane.id]) { hints(pane); CALC[pane.id](pane, read(pane)); } }
+  function run(pane) { if (CALC[pane.id]) { hints(pane); var o = read(pane); C.useYear(rateYear(o)); CALC[pane.id](pane, o); } }
   function bindMoney(el) {
     el.addEventListener('blur', function () { var n = num(el.value); el.value = n ? won(n) : ''; });
     if (el.value) el.value = won(num(el.value));
