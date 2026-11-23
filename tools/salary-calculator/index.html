@@ -812,8 +812,7 @@ dialog.imgdlg::backdrop{background:rgba(0,0,0,.45)}
 
 <!-- 요율표 -->
 <section class="pane" id="rates" data-title="4대보험·산재 요율표" hidden>
-  <div class="pane-head"><h2>2026년 4대보험 · 산재보험 요율</h2><p>이 계산기에 쓴 요율이에요. 산재보험료는 업종마다 요율이 달라요. 아래 표에서 우리 회사 업종을 찾아보세요.</p></div>
-  <div class="box warn"><p class="box-t">이 표는 2026년 요율이에요</p><p>2027년 요율표는 정리 중이에요. 급여 계산에서 [요율 적용 연도]를 2027년으로 고르면 2027년 요율로 계산해요.</p></div>
+  <div class="pane-head"><h2>2027년 4대보험 · 산재보험 요율</h2><p>2026년과 비교해서 보여드려요. 건강보험은 그대로이고, 국민연금 · 장기요양 · 고용보험이 올라요. 산재보험료는 업종마다 요율이 달라요.</p></div>
   <div id="ratesOut" style="display:flex;flex-direction:column;gap:22px;max-width:900px"></div>
 </section>
 
@@ -840,9 +839,9 @@ dialog.imgdlg::backdrop{background:rgba(0,0,0,.45)}
 </dialog>
 <div class="toast" role="status" aria-live="polite"></div>
 <script>/* 새 버전이 올라왔는데 브라우저가 예전 화면을 보여주면 한 번 새로고침 */
-(function(){var PV='202611231130';try{fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(t){t=(t||'').trim();if(t&&t!==PV){var k='reloaded-'+t;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}location.reload()}}).catch(function(){})}catch(e){}})();</script>
-<script src="taxtable-2026.js?v=202611231130"></script>
-<script src="calc.js?v=202611231130"></script>
-<script src="app.js?v=202611231130"></script>
+(function(){var PV='202611231230';try{fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(t){t=(t||'').trim();if(t&&t!==PV){var k='reloaded-'+t;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}location.reload()}}).catch(function(){})}catch(e){}})();</script>
+<script src="taxtable-2026.js?v=202611231230"></script>
+<script src="calc.js?v=202611231230"></script>
+<script src="app.js?v=202611231230"></script>
 </body>
 </html>
