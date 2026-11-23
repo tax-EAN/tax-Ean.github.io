@@ -1,5 +1,5 @@
 /* 급여·노무 계산 엔진 (화면과 분리된 순수 계산 함수)
-   기준: 2026년 요율. 요율이 바뀌면 아래 RATES만 고치면 됩니다. */
+   기준: 2026년 요율(아래 RATES). 해마다 바뀌는 요율은 RATES_Y에 연도별로 넣고 useYear(연도)로 바꿔 씁니다. */
 (function (root) {
   'use strict';
 
@@ -14,6 +14,19 @@
     nontax: { meal: 200000, car: 200000, childPer: 200000 },
     day: { ded: 150000, rate: 0.06, credit: 0.55 }                                        // 일용근로
   };
+
+  // 연도별로 바뀌는 요율 – useYear(연도)가 RATES에 덮어씀
+  // 2027년: 국민연금 10%, 건강보험 7.19% 동결, 장기요양 13.90%(소득 대비 0.9994%), 고용보험 2.0%(법 개정 중 – 바뀌면 여기만 고치기)
+  var RATES_Y = {
+    2026: { np: { rate: 0.0475 }, ltc: { incomeRate: 0.009448, ofHi: 0.1314 }, ei: { emp: 0.009, er: 0.009 } },
+    2027: { np: { rate: 0.05 }, ltc: { incomeRate: 0.009994, ofHi: 0.139 }, ei: { emp: 0.010, er: 0.010 } }
+  };
+  function useYear(y) {
+    y = +y || new Date().getFullYear(); y = y >= 2027 ? 2027 : 2026;
+    var s = RATES_Y[y]; Object.keys(s).forEach(function (k) { Object.assign(RATES[k], s[k]); });
+    RATES.year = y; return y;
+  }
+  RATES.year = 2026;
 
   // 2026년 사업종류별 산재보험료율(고용노동부고시 제2025-91호), 단위 ‰
   var INDUSTRY = [
@@ -497,7 +510,7 @@
   }
 
   var api = {
-    RATES: RATES, INDUSTRY: INDUSTRY, floor10: floor10, unit: unit,
+    RATES: RATES, RATES_Y: RATES_Y, useYear: useYear, INDUSTRY: INDUSTRY, floor10: floor10, unit: unit,
     tableTax: tableTax, incomeTax: incomeTax, kidDeduction: kidDeduction, nontaxSplit: nontaxSplit,
     salary: salary, salaryReverse: salaryReverse, daily: daily, dailyReverse: dailyReverse,
     biz: biz, bizReverse: bizReverse, etc: etc, etcReverse: etcReverse, holidayPay: holidayPay, annualLeave: annualLeave, hiMonths: hiMonths, hiSettle: hiSettle, dailyInsurance: dailyInsurance, addMonths: addMonths, hiMonthlyPaid: hiMonthlyPaid, prorate: prorate, monthlyHours: monthlyHours,
